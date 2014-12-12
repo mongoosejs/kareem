@@ -10,6 +10,8 @@ Kareem.prototype.execPre = function(name, context, callback) {
   var numPres = pres.length;
   var numAsyncPres = pres.numAsync || 0;
   var currentPre = 0;
+  var asyncPresLeft = numAsyncPres;
+  var done = false;
 
   if (!numPres) {
     return process.nextTick(function() {
@@ -20,16 +22,56 @@ Kareem.prototype.execPre = function(name, context, callback) {
   var next = function() {
     var pre = pres[currentPre];
 
-    pre.fn.call(context, function(error) {
-      if (error) {
-        return callback(error);
-      }
-      if (++currentPre >= numPres) {
-        return callback();
-      }
+    if (pre.isAsync) {
+      pre.fn.call(
+        context,
+        function(error) {
+          if (error) {
+            if (done) {
+              return;
+            }
+            done = true;
+            return callback(error);
+          }
 
-      next();
-    });
+          ++currentPre;
+          next();
+        },
+        function(error) {
+          if (error) {
+            if (done) {
+              return;
+            }
+            done = true;
+            return callback(error);
+          }
+
+          if (0 === --numAsyncPres) {
+            return callback();
+          } 
+        });
+    } else {
+      pre.fn.call(context, function(error) {
+        if (error) {
+          if (done) {
+            return;
+          }
+          done = true;
+          return callback(error);
+        }
+
+        if (++currentPre >= numPres) {
+          if (asyncPresLeft > 0) {
+            // Leave parallel hooks to run
+            return;
+          } else {
+            return callback();
+          }
+        }
+
+        next();
+      });
+    }
   };
 
   next();

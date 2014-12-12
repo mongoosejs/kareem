@@ -60,11 +60,44 @@ describe('pre hooks', function() {
       done();
     });
 
-    var obj = { bacon: 0, eggs: 0 }
+    var obj = { bacon: 0, eggs: 0 };
 
     hooks.execPre('cook', obj, function() {
       assert.equal(3, obj.bacon);
       assert.equal(4, obj.eggs);
+      done();
+    });
+  });
+
+  it('can execute parallel (async) pre hooks', function(done) {
+    hooks.pre('cook', true, function(next, done) {
+      this.bacon = 3;
+      next();
+      setTimeout(function() {
+        done();
+      }, 5);
+    });
+
+    hooks.pre('cook', true, function(next, done) {
+      next();
+      var _this = this;
+      setTimeout(function() {
+        _this.eggs = 4;
+        done();
+      }, 10);
+    });
+
+    hooks.pre('cook', function(next) {
+      this.waffles = false;
+      next();
+    });
+
+    var obj = { bacon: 0, eggs: 0 };
+
+    hooks.execPre('cook', obj, function() {
+      assert.equal(3, obj.bacon);
+      assert.equal(4, obj.eggs);
+      assert.equal(false, obj.waffles);
       done();
     });
   });
