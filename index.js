@@ -90,16 +90,48 @@ Kareem.prototype.execPre = function(name, context, callback) {
   next();
 };
 
-Kareem.prototype.execPost = function(name, context, callback) {
+Kareem.prototype.execPost = function(name, context, args, callback) {
   var posts = this._posts[name] || [];
   var numPosts = posts.length;
   var currentPost = 0;
+  var done = false;
 
-  if (!numPres) {
+  if (!numPosts) {
     return process.nextTick(function() {
       callback();
     });
   }
+
+  var next = function() {
+    var post = posts[currentPost];
+
+    if (post.length > args.length) {
+      post.apply(context, args.concat(function(error) {
+        if (error) {
+          if (done) {
+            return;
+          }
+          return callback(error);
+        }
+
+        if (++currentPost >= numPosts) {
+          return callback.apply(null, [undefined].concat(args));
+        }
+
+        next();
+      }));
+    } else {
+      post.apply(context, args);
+
+      if (++currentPost >= numPosts) {
+        return callback.apply(null, [undefined].concat(args));
+      }
+
+      next();
+    }
+  };
+
+  next();
 };
 
 Kareem.prototype.pre = function(name, isAsync, fn, error) {
@@ -122,13 +154,7 @@ Kareem.prototype.pre = function(name, isAsync, fn, error) {
   return this;
 };
 
-Kareem.prototype.post = function(name, isAsync, fn) {
-  if (arguments.length === 2) {
-    fn = isAsync;
-    isAsync = false;
-  }
-
-  fn.isAsync = isAsync;
+Kareem.prototype.post = function(name, fn) {
   (this._posts[name] = this._posts[name] || []).push(fn);
   return this;
 };

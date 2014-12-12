@@ -121,3 +121,32 @@ describe('pre hooks', function() {
     });
   });
 });
+
+describe('post hooks', function() {
+  var hooks;
+
+  beforeEach(function() {
+    hooks = new Kareem();
+  });
+
+  it('runs without any hooks specified', function(done) {
+    hooks.execPost('cook', null, [], function() {
+      done();
+    });
+  });
+
+  it('executes with parameters passed in', function(done) {
+    hooks.post('cook', function(eggs, bacon, callback) {
+      assert.equal(1, eggs);
+      assert.equal(2, bacon);
+      callback();
+    });
+
+    hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
+      assert.ifError(error);
+      assert.equal(1, eggs);
+      assert.equal(2, bacon);
+      done();
+    });
+  });
+});
