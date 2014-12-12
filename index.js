@@ -134,6 +134,42 @@ Kareem.prototype.execPost = function(name, context, args, callback) {
   next();
 };
 
+Kareem.prototype.wrap = function(name, fn, context, args) {
+  var lastArg = (args.length > 0 ? args[args.length - 1] : null);
+  var _this = this;
+
+  this.execPre(name, context, function(error) {
+    if (error) {
+      if (typeof lastArg === 'function') {
+        return lastArg(error);
+      }
+      return;
+    }
+
+    var end = (typeof lastArg === 'function' ? args.length - 1 : args.length);
+
+    fn.apply(context, args.slice(0, end).concat(function() {
+      if (arguments[0]) {
+        return typeof lastArg === 'function' ?
+          lastArg(arguments[0]) :
+          undefined;
+      }
+
+      _this.execPost(name, context, args.slice(0, end), function() {
+        if (arguments[0]) {
+          return typeof lastArg === 'function' ?
+            lastArg(arguments[0]) :
+            undefined;
+        }
+
+        return typeof lastArg === 'function' ?
+          lastArg.apply(context, arguments) :
+          undefined;
+      });
+    }));
+  });
+};
+
 Kareem.prototype.pre = function(name, isAsync, fn, error) {
   if ('boolean' !== typeof arguments[1]) {
     error = fn;
