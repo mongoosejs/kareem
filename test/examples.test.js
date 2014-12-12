@@ -130,7 +130,9 @@ describe('post hooks', function() {
   });
 
   it('runs without any hooks specified', function(done) {
-    hooks.execPost('cook', null, [], function() {
+    hooks.execPost('cook', null, [1], function(error, eggs) {
+      assert.ifError(error);
+      assert.equal(1, eggs);
       done();
     });
   });

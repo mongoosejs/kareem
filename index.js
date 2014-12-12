@@ -98,7 +98,7 @@ Kareem.prototype.execPost = function(name, context, args, callback) {
 
   if (!numPosts) {
     return process.nextTick(function() {
-      callback();
+      callback.apply(null, [undefined].concat(args));
     });
   }
 
