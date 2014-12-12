@@ -151,7 +151,9 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
 
 ```javascript
     
-    hooks.execPost('cook', null, [], function() {
+    hooks.execPost('cook', null, [1], function(error, eggs) {
+      assert.ifError(error);
+      assert.equal(1, eggs);
       done();
     });
   
