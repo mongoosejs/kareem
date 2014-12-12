@@ -49,6 +49,25 @@ describe('pre hooks', function() {
     });
   });
 
+  it('can run fully synchronous pres', function(done) {
+    var count1 = 0;
+    var count2 = 0;
+
+    hooks.pre('cook', function() {
+      ++count1;
+    });
+
+    hooks.pre('cook', function() {
+      ++count2;
+    });
+
+    hooks.execPre('cook', null, function() {
+      assert.equal(1, count1);
+      assert.equal(1, count2);
+      done();
+    });
+  });
+
   it('properly attaches context to pre hooks', function(done) {
     hooks.pre('cook', function(done) {
       this.bacon = 3;

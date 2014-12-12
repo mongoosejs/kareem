@@ -50,7 +50,7 @@ Kareem.prototype.execPre = function(name, context, callback) {
             return callback();
           } 
         });
-    } else {
+    } else if (pre.fn.length > 0) {
       pre.fn.call(context, function(error) {
         if (error) {
           if (done) {
@@ -71,10 +71,35 @@ Kareem.prototype.execPre = function(name, context, callback) {
 
         next();
       });
+    } else {
+      pre.fn.call(context);
+      if (++currentPre >= numPres) {
+        if (asyncPresLeft > 0) {
+          // Leave parallel hooks to run
+          return;
+        } else {
+          return process.nextTick(function() {
+            callback()
+          });
+        }
+      }
+      next();
     }
   };
 
   next();
+};
+
+Kareem.prototype.execPost = function(name, context, callback) {
+  var posts = this._posts[name] || [];
+  var numPosts = posts.length;
+  var currentPost = 0;
+
+  if (!numPres) {
+    return process.nextTick(function() {
+      callback();
+    });
+  }
 };
 
 Kareem.prototype.pre = function(name, isAsync, fn, error) {
