@@ -6,9 +6,9 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
 
 <img src="http://upload.wikimedia.org/wikipedia/commons/0/00/Kareem-Abdul-Jabbar_Lipofsky.jpg" width="220">
 
-### pre hooks
+## pre hooks
 
-##### It runs without any hooks specified
+#### It runs without any hooks specified
 
 ```javascript
     
@@ -18,7 +18,7 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
   
 ```
 
-##### It runs basic serial pre hooks
+#### It runs basic serial pre hooks
 
 ```javascript
     
@@ -36,7 +36,7 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
   
 ```
 
-##### It can run multipe pres
+#### It can run multipe pres
 
 ```javascript
     
@@ -61,7 +61,7 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
   
 ```
 
-##### It can run fully synchronous pres
+#### It can run fully synchronous pres
 
 ```javascript
     
@@ -84,7 +84,7 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
   
 ```
 
-##### It properly attaches context to pre hooks
+#### It properly attaches context to pre hooks
 
 ```javascript
     
@@ -108,7 +108,7 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
   
 ```
 
-##### It can execute parallel (async) pre hooks
+#### It can execute parallel (async) pre hooks
 
 ```javascript
     
@@ -145,9 +145,9 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
   
 ```
 
-### post hooks
+## post hooks
 
-##### It runs without any hooks specified
+#### It runs without any hooks specified
 
 ```javascript
     
@@ -159,7 +159,7 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
   
 ```
 
-##### It executes with parameters passed in
+#### It executes with parameters passed in
 
 ```javascript
     
@@ -178,9 +178,9 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
   
 ```
 
-### wrap()
+## wrap()
 
-##### It wraps pre and post calls into one call
+#### It wraps pre and post calls into one call
 
 ```javascript
     
@@ -231,7 +231,7 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
         assert.equal(4, obj.eggs);
         assert.equal(false, obj.waffles);
         assert.equal(undefined, obj.tofu);
-        callback();
+        callback(null, o);
       },
       obj,
       args);
