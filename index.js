@@ -150,12 +150,14 @@ Kareem.prototype.wrap = function(name, fn, context, args) {
 
     fn.apply(context, args.slice(0, end).concat(function() {
       if (arguments[0]) {
+        // Assume error
         return typeof lastArg === 'function' ?
           lastArg(arguments[0]) :
           undefined;
       }
 
-      _this.execPost(name, context, args.slice(0, end), function() {
+      var argsWithoutError = Array.prototype.slice.call(arguments, 1);
+      _this.execPost(name, context, argsWithoutError, function() {
         if (arguments[0]) {
           return typeof lastArg === 'function' ?
             lastArg(arguments[0]) :

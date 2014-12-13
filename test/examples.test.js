@@ -208,7 +208,7 @@ describe('wrap()', function() {
         assert.equal(4, obj.eggs);
         assert.equal(false, obj.waffles);
         assert.equal(undefined, obj.tofu);
-        callback();
+        callback(null, o);
       },
       obj,
       args);
