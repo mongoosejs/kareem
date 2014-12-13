@@ -10,7 +10,7 @@ var mdOutput =
   'whenever necessary, as opposed to simply wrapping a single function.\n\n' +
   'Named for the NBA\'s all-time leading scorer Kareem Abdul-Jabbar, known ' +
   'for his mastery of the [hook shot](http://en.wikipedia.org/wiki/Kareem_Abdul-Jabbar#Skyhook)\n\n' +
-  '<img src="http://upload.wikimedia.org/wikipedia/commons/0/00/Kareem-Abdul-Jabbar_Lipofsky.jpg" width="220">\n\n'
+  '<img src="http://upload.wikimedia.org/wikipedia/commons/0/00/Kareem-Abdul-Jabbar_Lipofsky.jpg" width="220">\n\n' +
   '# API\n\n';
 
 for (var i = 0; i < blocks.length; ++i) {
