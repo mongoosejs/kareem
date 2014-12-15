@@ -1,4 +1,4 @@
-# kareem <img src="https://travis-ci.org/vkarpov15/kareem.svg?branch=master">
+# kareem [![Build Status](https://travis-ci.org/vkarpov15/kareem.svg?branch=master)](https://travis-ci.org/vkarpov15/kareem)
 
 Next-generation take on the [hooks](http://npmjs.org/package/hooks), meant to offer additional flexibility in allowing you to execute hooks whenever necessary, as opposed to simply wrapping a single function.
 
