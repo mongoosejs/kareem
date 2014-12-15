@@ -1,6 +1,6 @@
 # kareem [![Build Status](https://travis-ci.org/vkarpov15/kareem.svg?branch=master)](https://travis-ci.org/vkarpov15/kareem)
 
-Next-generation take on the [hooks](http://npmjs.org/package/hooks), meant to offer additional flexibility in allowing you to execute hooks whenever necessary, as opposed to simply wrapping a single function.
+Re-imagined take on the [hooks](http://npmjs.org/package/hooks) module, meant to offer additional flexibility in allowing you to execute hooks whenever necessary, as opposed to simply wrapping a single function.
 
 Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his mastery of the [hook shot](http://en.wikipedia.org/wiki/Kareem_Abdul-Jabbar#Skyhook)
 
