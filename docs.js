@@ -4,11 +4,10 @@ var content = require('fs').readFileSync('./test/examples.test.js').toString();
 var blocks = acquit.parse(content);
 
 var mdOutput =
-  '# kareem\n\n' +
+  '# kareem <img src="https://travis-ci.org/vkarpov15/kareem.svg?branch=master">\n\n' +
   'Next-generation take on the [hooks](http://npmjs.org/package/hooks), ' +
   'meant to offer additional flexibility in allowing you to execute hooks ' +
   'whenever necessary, as opposed to simply wrapping a single function.\n\n' +
-  '<img src="https://travis-ci.org/vkarpov15/kareem.svg?branch=master">\n\n' +
   'Named for the NBA\'s all-time leading scorer Kareem Abdul-Jabbar, known ' +
   'for his mastery of the [hook shot](http://en.wikipedia.org/wiki/Kareem_Abdul-Jabbar#Skyhook)\n\n' +
   '<img src="http://upload.wikimedia.org/wikipedia/commons/0/00/Kareem-Abdul-Jabbar_Lipofsky.jpg" width="220">\n\n' +
