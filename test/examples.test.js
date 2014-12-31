@@ -151,6 +151,33 @@ describe('post hooks', function() {
       done();
     });
   });
+
+  it('can use synchronous post hooks', function(done) {
+    var execed = {};
+
+    hooks.post('cook', function(eggs, bacon) {
+      execed.first = true;
+      assert.equal(1, eggs);
+      assert.equal(2, bacon);
+    });
+
+    hooks.post('cook', function(eggs, bacon, callback) {
+      execed.second = true;
+      assert.equal(1, eggs);
+      assert.equal(2, bacon);
+      callback();
+    });
+
+    hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
+      assert.ifError(error);
+      assert.equal(2, Object.keys(execed).length);
+      assert.ok(execed.first);
+      assert.ok(execed.second);
+      assert.equal(1, eggs);
+      assert.equal(2, bacon);
+      done();
+    });
+  });
 });
 
 describe('wrap()', function() {

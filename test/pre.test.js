@@ -39,23 +39,25 @@ describe('execPre', function() {
     var execed = {};
 
     hooks.pre('cook', true, function(next, done) {
-      next();
       execed.first = true;
       setTimeout(
         function() {
           done('error!');
         },
         5);
+
+      next();
     });
 
     hooks.pre('cook', true, function(next, done) {
-      next();
       execed.second = true;
       setTimeout(
         function() {
           done('other error!');
         },
         10);
+
+      next();
     });
 
     hooks.execPre('cook', null, function(err) {
@@ -72,12 +74,13 @@ describe('execPre', function() {
 
     hooks.pre('cook', true, function(next, done) {
       execed.first = true;
-      next();
       setTimeout(
         function() {
           done('other error!');
         },
         15);
+
+      next();
     });
 
     hooks.pre('cook', true, function(next, done) {
@@ -104,12 +107,13 @@ describe('execPre', function() {
 
     hooks.pre('cook', true, function(next, done) {
       execed.first = true;
-      next();
       setTimeout(
         function() {
           done('other error!');
         },
         5);
+
+      next();
     });
 
     hooks.pre('cook', true, function(next, done) {
@@ -119,7 +123,7 @@ describe('execPre', function() {
           next('error!');
           done('another error!');
         },
-        15);
+        25);
     });
 
     hooks.execPre('cook', null, function(err) {
@@ -136,12 +140,13 @@ describe('execPre', function() {
 
     hooks.pre('cook', true, function(next, done) {
       execed.first = true;
-      next();
       setTimeout(
         function() {
           done('other error!');
         },
         5);
+
+      next();
     });
 
     hooks.pre('cook', function(next) {
@@ -167,12 +172,13 @@ describe('execPre', function() {
 
     hooks.pre('cook', true, function(next, done) {
       execed.first = true;
-      next();
       setTimeout(
         function() {
           done();
         },
         5);
+
+      next();
     });
 
     hooks.pre('cook', function() {

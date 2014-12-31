@@ -97,7 +97,6 @@ Kareem.prototype.execPost = function(name, context, args, callback) {
   var posts = this._posts[name] || [];
   var numPosts = posts.length;
   var currentPost = 0;
-  var done = false;
 
   if (!numPosts) {
     return process.nextTick(function() {
@@ -111,9 +110,6 @@ Kareem.prototype.execPost = function(name, context, args, callback) {
     if (post.length > args.length) {
       post.apply(context, args.concat(function(error) {
         if (error) {
-          if (done) {
-            return;
-          }
           return callback(error);
         }
 
