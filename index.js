@@ -20,6 +20,9 @@ Kareem.prototype.execPre = function(name, context, callback) {
   }
 
   var next = function() {
+    if (currentPre >= numPres) {
+      return;
+    }
     var pre = pres[currentPre];
 
     if (pre.isAsync) {

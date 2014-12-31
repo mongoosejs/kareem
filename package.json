@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "acquit": "0.0.3",
+    "istanbul": "0.3.5",
     "mocha": "2.0.0"
   },
   "author": "Valeri Karpov <val@karpov.io>",
