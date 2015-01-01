@@ -4,8 +4,9 @@ var content = require('fs').readFileSync('./test/examples.test.js').toString();
 var blocks = acquit.parse(content);
 
 var mdOutput =
-  '# kareem ' +
-  '[![Build Status](https://travis-ci.org/vkarpov15/kareem.svg?branch=master)](https://travis-ci.org/vkarpov15/kareem)\n\n' +
+  '# kareem\n\n' +
+  '[![Build Status](https://travis-ci.org/vkarpov15/kareem.svg?branch=master)](https://travis-ci.org/vkarpov15/kareem) ' +
+  '[![Coverage Status](https://img.shields.io/coveralls/vkarpov15/kareem.svg)](https://coveralls.io/r/vkarpov15/kareem)\n\n' +
   'Re-imagined take on the [hooks](http://npmjs.org/package/hooks) module, ' +
   'meant to offer additional flexibility in allowing you to execute hooks ' +
   'whenever necessary, as opposed to simply wrapping a single function.\n\n' +

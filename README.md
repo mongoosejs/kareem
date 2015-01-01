@@ -1,4 +1,6 @@
-# kareem [![Build Status](https://travis-ci.org/vkarpov15/kareem.svg?branch=master)](https://travis-ci.org/vkarpov15/kareem)
+# kareem
+
+[![Build Status](https://travis-ci.org/vkarpov15/kareem.svg?branch=master)](https://travis-ci.org/vkarpov15/kareem) [![Coverage Status](https://img.shields.io/coveralls/vkarpov15/kareem.svg)](https://coveralls.io/r/vkarpov15/kareem)
 
 Re-imagined take on the [hooks](http://npmjs.org/package/hooks) module, meant to offer additional flexibility in allowing you to execute hooks whenever necessary, as opposed to simply wrapping a single function.
 
@@ -173,6 +175,37 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
 
     hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
       assert.ifError(error);
+      assert.equal(1, eggs);
+      assert.equal(2, bacon);
+      done();
+    });
+  
+```
+
+#### It can use synchronous post hooks
+
+```javascript
+    
+    var execed = {};
+
+    hooks.post('cook', function(eggs, bacon) {
+      execed.first = true;
+      assert.equal(1, eggs);
+      assert.equal(2, bacon);
+    });
+
+    hooks.post('cook', function(eggs, bacon, callback) {
+      execed.second = true;
+      assert.equal(1, eggs);
+      assert.equal(2, bacon);
+      callback();
+    });
+
+    hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
+      assert.ifError(error);
+      assert.equal(2, Object.keys(execed).length);
+      assert.ok(execed.first);
+      assert.ok(execed.second);
       assert.equal(1, eggs);
       assert.equal(2, bacon);
       done();
