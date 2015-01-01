@@ -12,6 +12,14 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
 
 ## pre hooks
 
+Much like [hooks](https://npmjs.org/package/hooks), kareem lets you define
+pre and post hooks: pre hooks are called before a given function executes.
+Unlike hooks, kareem stores hooks and other internal state in a separate
+object, rather than relying on inheritance. Furthermore, kareem exposes
+an `execPre()` function that allows you to execute your pre hooks when
+appropriate, giving you more fine-grained control over your function hooks.
+
+
 #### It runs without any hooks specified
 
 ```javascript
@@ -23,6 +31,10 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
 ```
 
 #### It runs basic serial pre hooks
+
+pre hook functions take one parameter, a "done" function that you execute
+when your pre hook is finished.
+
 
 ```javascript
     
@@ -40,7 +52,7 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
   
 ```
 
-#### It can run multipe pres
+#### It can run multipe pre hooks
 
 ```javascript
     
@@ -65,7 +77,11 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
   
 ```
 
-#### It can run fully synchronous pres
+#### It can run fully synchronous pre hooks
+
+If your pre hook function takes no parameters, its assumed to be
+fully synchronous.
+
 
 ```javascript
     
@@ -90,6 +106,9 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
 
 #### It properly attaches context to pre hooks
 
+Pre save hook functions are bound to the second parameter to `execPre()`
+
+
 ```javascript
     
     hooks.pre('cook', function(done) {
@@ -104,6 +123,7 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
 
     var obj = { bacon: 0, eggs: 0 };
 
+    // In the pre hooks, `this` will refer to `obj`
     hooks.execPre('cook', obj, function() {
       assert.equal(3, obj.bacon);
       assert.equal(4, obj.eggs);
@@ -113,6 +133,12 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
 ```
 
 #### It can execute parallel (async) pre hooks
+
+Like the hooks module, you can declare "async" pre hooks - these take two
+parameters, the functions `next()` and `done()`. `next()` passes control to
+the next pre hook, but the underlying function won't be called until all
+async pre hooks have called `done()`.
+
 
 ```javascript
     
@@ -270,6 +296,64 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
       },
       obj,
       args);
+  
+```
+
+## createWrapper()
+
+#### It wraps wrap() into a callable function
+
+```javascript
+    
+    hooks.pre('cook', true, function(next, done) {
+      this.bacon = 3;
+      next();
+      setTimeout(function() {
+        done();
+      }, 5);
+    });
+
+    hooks.pre('cook', true, function(next, done) {
+      next();
+      var _this = this;
+      setTimeout(function() {
+        _this.eggs = 4;
+        done();
+      }, 10);
+    });
+
+    hooks.pre('cook', function(next) {
+      this.waffles = false;
+      next();
+    });
+
+    hooks.post('cook', function(obj) {
+      obj.tofu = 'no';
+    });
+
+    var obj = { bacon: 0, eggs: 0 };
+
+    var cook = hooks.createWrapper(
+      'cook',
+      function(o, callback) {
+        assert.equal(3, obj.bacon);
+        assert.equal(4, obj.eggs);
+        assert.equal(false, obj.waffles);
+        assert.equal(undefined, obj.tofu);
+        callback(null, o);
+      },
+      obj);
+
+    cook(obj, function(error, result) {
+      assert.ifError(error);
+      assert.equal(3, obj.bacon);
+      assert.equal(4, obj.eggs);
+      assert.equal(false, obj.waffles);
+      assert.equal('no', obj.tofu);
+
+      assert.equal(obj, result);
+      done();
+    });
   
 ```
 

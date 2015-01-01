@@ -1,6 +1,13 @@
 var assert = require('assert');
 var Kareem = require('../');
 
+/* Much like [hooks](https://npmjs.org/package/hooks), kareem lets you define
+ * pre and post hooks: pre hooks are called before a given function executes.
+ * Unlike hooks, kareem stores hooks and other internal state in a separate
+ * object, rather than relying on inheritance. Furthermore, kareem exposes
+ * an `execPre()` function that allows you to execute your pre hooks when
+ * appropriate, giving you more fine-grained control over your function hooks.
+ */
 describe('pre hooks', function() {
   var hooks;
 
@@ -14,6 +21,9 @@ describe('pre hooks', function() {
     });
   });
 
+  /* pre hook functions take one parameter, a "done" function that you execute
+   * when your pre hook is finished.
+   */
   it('runs basic serial pre hooks', function(done) {
     var count = 0;
 
@@ -28,7 +38,7 @@ describe('pre hooks', function() {
     });
   });
 
-  it('can run multipe pres', function(done) {
+  it('can run multipe pre hooks', function(done) {
     var count1 = 0;
     var count2 = 0;
 
@@ -49,7 +59,10 @@ describe('pre hooks', function() {
     });
   });
 
-  it('can run fully synchronous pres', function(done) {
+  /* If your pre hook function takes no parameters, its assumed to be
+   * fully synchronous.
+   */
+  it('can run fully synchronous pre hooks', function(done) {
     var count1 = 0;
     var count2 = 0;
 
@@ -68,6 +81,8 @@ describe('pre hooks', function() {
     });
   });
 
+  /* Pre save hook functions are bound to the second parameter to `execPre()`
+   */
   it('properly attaches context to pre hooks', function(done) {
     hooks.pre('cook', function(done) {
       this.bacon = 3;
@@ -81,6 +96,7 @@ describe('pre hooks', function() {
 
     var obj = { bacon: 0, eggs: 0 };
 
+    // In the pre hooks, `this` will refer to `obj`
     hooks.execPre('cook', obj, function() {
       assert.equal(3, obj.bacon);
       assert.equal(4, obj.eggs);
@@ -88,6 +104,11 @@ describe('pre hooks', function() {
     });
   });
 
+  /* Like the hooks module, you can declare "async" pre hooks - these take two
+   * parameters, the functions `next()` and `done()`. `next()` passes control to
+   * the next pre hook, but the underlying function won't be called until all
+   * async pre hooks have called `done()`.
+   */
   it('can execute parallel (async) pre hooks', function(done) {
     hooks.pre('cook', true, function(next, done) {
       this.bacon = 3;
