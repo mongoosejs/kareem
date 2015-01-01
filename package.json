@@ -16,5 +16,9 @@
     "mocha": "2.0.0"
   },
   "author": "Valeri Karpov <val@karpov.io>",
-  "license": "Apache 2.0"
+  "license": "Apache 2.0",
+  "scripts": {
+    "test-travis": "./node_modules/istanbul/lib/cli.js cover ./node_modules/mocha/bin/_mocha -- -
+R spec ./test/*"
+  }
 }
