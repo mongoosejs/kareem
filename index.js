@@ -171,6 +171,14 @@ Kareem.prototype.wrap = function(name, fn, context, args) {
   });
 };
 
+Kareem.prototype.createWrapper = function(name, fn, context) {
+  var _this = this;
+  return function() {
+    var args = Array.prototype.slice.call(arguments);
+    _this.wrap(name, fn, context, args);
+  };
+};
+
 Kareem.prototype.pre = function(name, isAsync, fn, error) {
   if ('boolean' !== typeof arguments[1]) {
     error = fn;
