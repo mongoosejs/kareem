@@ -15,7 +15,7 @@ Kareem.prototype.execPre = function(name, context, callback) {
 
   if (!numPres) {
     return process.nextTick(function() {
-      callback();
+      callback(null);
     });
   }
 
@@ -50,8 +50,8 @@ Kareem.prototype.execPre = function(name, context, callback) {
           }
 
           if (0 === --numAsyncPres) {
-            return callback();
-          } 
+            return callback(null);
+          }
         });
     } else if (pre.fn.length > 0) {
       pre.fn.call(context, function(error) {
@@ -68,7 +68,7 @@ Kareem.prototype.execPre = function(name, context, callback) {
             // Leave parallel hooks to run
             return;
           } else {
-            return callback();
+            return callback(null);
           }
         }
 
@@ -82,7 +82,7 @@ Kareem.prototype.execPre = function(name, context, callback) {
           return;
         } else {
           return process.nextTick(function() {
-            callback()
+            callback(null);
           });
         }
       }
@@ -100,7 +100,7 @@ Kareem.prototype.execPost = function(name, context, args, callback) {
 
   if (!numPosts) {
     return process.nextTick(function() {
-      callback.apply(null, [undefined].concat(args));
+      callback.apply(null, [null].concat(args));
     });
   }
 
@@ -114,7 +114,7 @@ Kareem.prototype.execPost = function(name, context, args, callback) {
         }
 
         if (++currentPost >= numPosts) {
-          return callback.apply(null, [undefined].concat(args));
+          return callback.apply(null, [null].concat(args));
         }
 
         next();
@@ -123,7 +123,7 @@ Kareem.prototype.execPost = function(name, context, args, callback) {
       post.apply(context, args);
 
       if (++currentPost >= numPosts) {
-        return callback.apply(null, [undefined].concat(args));
+        return callback.apply(null, [null].concat(args));
       }
 
       next();

@@ -74,7 +74,8 @@ describe('pre hooks', function() {
       ++count2;
     });
 
-    hooks.execPre('cook', null, function() {
+    hooks.execPre('cook', null, function(error) {
+      assert.equal(null, error);
       assert.equal(1, count1);
       assert.equal(1, count2);
       done();
@@ -97,7 +98,8 @@ describe('pre hooks', function() {
     var obj = { bacon: 0, eggs: 0 };
 
     // In the pre hooks, `this` will refer to `obj`
-    hooks.execPre('cook', obj, function() {
+    hooks.execPre('cook', obj, function(error) {
+      assert.equal(null, error);
       assert.equal(3, obj.bacon);
       assert.equal(4, obj.eggs);
       done();
@@ -240,6 +242,7 @@ describe('wrap()', function() {
     var args = [obj];
     args.push(function(error, result) {
       assert.ifError(error);
+      assert.equal(null, error);
       assert.equal(3, obj.bacon);
       assert.equal(4, obj.eggs);
       assert.equal(false, obj.waffles);
