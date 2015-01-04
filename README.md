@@ -1,8 +1,9 @@
 # kareem
 
-Re-imagined take on the [hooks](http://npmjs.org/package/hooks) module, meant to offer additional flexibility in allowing you to execute hooks whenever necessary, as opposed to simply wrapping a single function.
+  [![Build Status](https://travis-ci.org/vkarpov15/kareem.svg?branch=master)](https://travis-ci.org/vkarpov15/kareem)
+  [![Coverage Status](https://img.shields.io/coveralls/vkarpov15/kareem.svg)](https://coveralls.io/r/vkarpov15/kareem)
 
-[![Build Status](https://travis-ci.org/vkarpov15/kareem.svg?branch=master)](https://travis-ci.org/vkarpov15/kareem) [![Coverage Status](https://img.shields.io/coveralls/vkarpov15/kareem.svg)](https://coveralls.io/r/vkarpov15/kareem)
+Re-imagined take on the [hooks](http://npmjs.org/package/hooks) module, meant to offer additional flexibility in allowing you to execute hooks whenever necessary, as opposed to simply wrapping a single function.
 
 Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his mastery of the [hook shot](http://en.wikipedia.org/wiki/Kareem_Abdul-Jabbar#Skyhook)
 
@@ -96,7 +97,8 @@ fully synchronous.
       ++count2;
     });
 
-    hooks.execPre('cook', null, function() {
+    hooks.execPre('cook', null, function(error) {
+      assert.equal(null, error);
       assert.equal(1, count1);
       assert.equal(1, count2);
       done();
@@ -124,7 +126,8 @@ Pre save hook functions are bound to the second parameter to `execPre()`
     var obj = { bacon: 0, eggs: 0 };
 
     // In the pre hooks, `this` will refer to `obj`
-    hooks.execPre('cook', obj, function() {
+    hooks.execPre('cook', obj, function(error) {
+      assert.equal(null, error);
       assert.equal(3, obj.bacon);
       assert.equal(4, obj.eggs);
       done();
@@ -276,6 +279,7 @@ async pre hooks have called `done()`.
     var args = [obj];
     args.push(function(error, result) {
       assert.ifError(error);
+      assert.equal(null, error);
       assert.equal(3, obj.bacon);
       assert.equal(4, obj.eggs);
       assert.equal(false, obj.waffles);
