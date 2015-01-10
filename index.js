@@ -49,7 +49,7 @@ Kareem.prototype.execPre = function(name, context, callback) {
             return callback(error);
           }
 
-          if (0 === --numAsyncPres) {
+          if (--numAsyncPres === 0) {
             return callback(null);
           }
         });
@@ -180,7 +180,7 @@ Kareem.prototype.createWrapper = function(name, fn, context) {
 };
 
 Kareem.prototype.pre = function(name, isAsync, fn, error) {
-  if ('boolean' !== typeof arguments[1]) {
+  if (typeof arguments[1] !== 'boolean') {
     error = fn;
     fn = isAsync;
     isAsync = false;
