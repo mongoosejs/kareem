@@ -204,4 +204,16 @@ Kareem.prototype.post = function(name, fn) {
   return this;
 };
 
+Kareem.prototype.clone = function() {
+  var n = new Kareem();
+  for (var key in this._pres) {
+    n._pres[key] = this._pres[key].slice();
+  }
+  for (var key in this._posts) {
+    n._posts[key] = this._posts[key].slice();
+  }
+
+  return n;
+};
+
 module.exports = Kareem;

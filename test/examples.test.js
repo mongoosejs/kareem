@@ -325,3 +325,15 @@ describe('createWrapper()', function() {
     });
   });
 });
+
+describe('clone()', function() {
+  it('clones a Kareem object', function() {
+    var k1 = new Kareem();
+    k1.pre('cook', function() {});
+    k1.post('cook', function() {});
+
+    var k2 = k1.clone();
+    assert.deepEqual(['cook'], Object.keys(k2._pres));
+    assert.deepEqual(['cook'], Object.keys(k2._posts));
+  });
+});
