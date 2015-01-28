@@ -1,6 +1,6 @@
 {
   "name": "kareem",
-  "version": "0.0.8",
+  "version": "1.0.0",
   "description": "Next-generation take on pre/post function hooks",
   "main": "index.js",
   "scripts": {
