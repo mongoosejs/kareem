@@ -133,7 +133,7 @@ Kareem.prototype.execPost = function(name, context, args, callback) {
   next();
 };
 
-Kareem.prototype.wrap = function(name, fn, context, args) {
+Kareem.prototype.wrap = function(name, fn, context, args, useLegacyPost) {
   var lastArg = (args.length > 0 ? args[args.length - 1] : null);
   var _this = this;
 
@@ -155,6 +155,10 @@ Kareem.prototype.wrap = function(name, fn, context, args) {
           undefined;
       }
 
+      if (useLegacyPost && typeof lastArg === 'function') {
+        lastArg.apply(context, arguments);
+      }
+
       var argsWithoutError = Array.prototype.slice.call(arguments, 1);
       _this.execPost(name, context, argsWithoutError, function() {
         if (arguments[0]) {
@@ -163,7 +167,7 @@ Kareem.prototype.wrap = function(name, fn, context, args) {
             undefined;
         }
 
-        return typeof lastArg === 'function' ?
+        return typeof lastArg === 'function' && !useLegacyPost ?
           lastArg.apply(context, arguments) :
           undefined;
       });

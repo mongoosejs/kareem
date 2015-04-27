@@ -248,4 +248,30 @@ describe('wrap()', function() {
       },
       25);
   });
+
+  it('can use legacy post behavior', function(done) {
+    var called = 0;
+    hooks.post('cook', function(callback) {
+      ++called;
+      callback();
+    });
+
+    var args = [function(error) {
+      assert.equal(called, 0);
+
+      setTimeout(function() {
+        assert.equal(called, 1);
+        done();
+      }, 0);
+    }];
+
+    hooks.wrap(
+      'cook',
+      function(callback) {
+        callback();
+      },
+      null,
+      args,
+      true);
+  });
 });
