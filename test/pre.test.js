@@ -193,4 +193,34 @@ describe('execPre', function() {
       done();
     });
   });
+
+  it('allows passing arguments to the next pre', function(done) {
+    var execed = {};
+
+    hooks.pre('cook', function(next) {
+      execed.first = true;
+      next(null, 'test');
+    });
+
+    hooks.pre('cook', function(next, p) {
+      execed.second = true;
+      assert.equal(p, 'test');
+      next();
+    });
+
+    hooks.pre('cook', function(next, p) {
+      execed.third = true;
+      assert.ok(!p);
+      next();
+    });
+
+    hooks.execPre('cook', null, function(err) {
+      assert.ifError(err);
+      assert.equal(3, Object.keys(execed).length);
+      assert.ok(execed.first);
+      assert.ok(execed.second);
+      assert.ok(execed.third);
+      done();
+    });
+  });
 });

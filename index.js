@@ -38,7 +38,7 @@ Kareem.prototype.execPre = function(name, context, callback) {
           }
 
           ++currentPre;
-          next();
+          next.apply(context, arguments);
         },
         function(error) {
           if (error) {
@@ -54,7 +54,7 @@ Kareem.prototype.execPre = function(name, context, callback) {
           }
         });
     } else if (pre.fn.length > 0) {
-      pre.fn.call(context, function(error) {
+      var args = [function(error) {
         if (error) {
           if (done) {
             return;
@@ -72,8 +72,14 @@ Kareem.prototype.execPre = function(name, context, callback) {
           }
         }
 
-        next();
-      });
+        next.apply(context, arguments);
+      }];
+      if (arguments.length >= 2) {
+        for (var i = 1; i < arguments.length; ++i) {
+          args.push(arguments[i]);
+        }
+      }
+      pre.fn.apply(context, args);
     } else {
       pre.fn.call(context);
       if (++currentPre >= numPres) {
