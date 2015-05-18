@@ -44,3 +44,27 @@ describe('execPost', function() {
     });
   });
 });
+
+describe('execPostSync', function() {
+  var hooks;
+
+  beforeEach(function() {
+    hooks = new Kareem();
+  });
+
+  it('executes hooks synchronously', function() {
+    var execed = {};
+
+    hooks.post('cook', function() {
+      execed.first = true;
+    });
+
+    hooks.post('cook', function() {
+      execed.second = true;
+    });
+
+    hooks.execPostSync('cook', null);
+    assert.ok(execed.first);
+    assert.ok(execed.second);
+  });
+});

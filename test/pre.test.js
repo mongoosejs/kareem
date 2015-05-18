@@ -224,3 +224,27 @@ describe('execPre', function() {
     });
   });
 });
+
+describe('execPreSync', function() {
+  var hooks;
+
+  beforeEach(function() {
+    hooks = new Kareem();
+  });
+
+  it('executes hooks synchronously', function() {
+    var execed = {};
+
+    hooks.pre('cook', function() {
+      execed.first = true;
+    });
+
+    hooks.pre('cook', function() {
+      execed.second = true;
+    });
+
+    hooks.execPreSync('cook', null);
+    assert.ok(execed.first);
+    assert.ok(execed.second);
+  });
+});

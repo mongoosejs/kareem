@@ -99,6 +99,15 @@ Kareem.prototype.execPre = function(name, context, callback) {
   next();
 };
 
+Kareem.prototype.execPreSync = function(name, context) {
+  var pres = this._pres[name] || [];
+  var numPres = pres.length;
+
+  for (var i = 0; i < numPres; ++i) {
+    pres[i].fn.call(context);
+  }
+};
+
 Kareem.prototype.execPost = function(name, context, args, callback) {
   var posts = this._posts[name] || [];
   var numPosts = posts.length;
@@ -137,6 +146,15 @@ Kareem.prototype.execPost = function(name, context, args, callback) {
   };
 
   next();
+};
+
+Kareem.prototype.execPostSync = function(name, context) {
+  var posts = this._posts[name] || [];
+  var numPosts = posts.length;
+
+  for (var i = 0; i < numPosts; ++i) {
+    posts[i].call(context);
+  }
 };
 
 Kareem.prototype.wrap = function(name, fn, context, args, useLegacyPost) {
