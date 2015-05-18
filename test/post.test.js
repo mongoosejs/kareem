@@ -67,4 +67,10 @@ describe('execPostSync', function() {
     assert.ok(execed.first);
     assert.ok(execed.second);
   });
+
+  it('works with no hooks specified', function() {
+    assert.doesNotThrow(function() {
+      hooks.execPostSync('cook', null);
+    });
+  });
 });
