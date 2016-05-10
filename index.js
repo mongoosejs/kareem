@@ -117,16 +117,17 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
   var numPosts = posts.length;
   var currentPost = 0;
 
-  if (!numPosts) {
-    return process.nextTick(function() {
-      callback.apply(null, [null].concat(args));
-    });
-  }
-
   var firstError = null;
   if (options && options.error) {
     firstError = options.error;
   }
+
+  if (!numPosts) {
+    return process.nextTick(function() {
+      callback.apply(null, [firstError].concat(args));
+    });
+  }
+
   var next = function() {
     var post = posts[currentPost];
 
@@ -185,53 +186,81 @@ Kareem.prototype.execPostSync = function(name, context) {
   }
 };
 
-Kareem.prototype.wrap = function(name, fn, context, args, useLegacyPost) {
+Kareem.prototype.wrap = function(name, fn, context, args, options) {
   var lastArg = (args.length > 0 ? args[args.length - 1] : null);
+  var argsWithoutCb = typeof lastArg === 'function' ?
+    args.slice(1) :
+    args;
   var _this = this;
+
+  var useLegacyPost;
+  if (typeof options === 'object') {
+    useLegacyPost = options && options.useLegacyPost;
+  } else {
+    useLegacyPost = options;
+  }
+  options = options || {};
 
   this.execPre(name, context, function(error) {
     if (error) {
-      if (typeof lastArg === 'function') {
-        return lastArg(error);
+      if (options.useErrorHandlers) {
+        var _options = { error: error };
+        return _this.execPost(name, context, argsWithoutCb, _options, function(error) {
+          return typeof lastArg === 'function' ?
+            lastArg(error) :
+            undefined;
+        });
+      } else {
+        return typeof lastArg === 'function' ?
+          lastArg(error) :
+          undefined;
       }
-      return;
     }
 
     var end = (typeof lastArg === 'function' ? args.length - 1 : args.length);
 
     fn.apply(context, args.slice(0, end).concat(function() {
+      var argsWithoutError = Array.prototype.slice.call(arguments, 1);
       if (arguments[0]) {
         // Assume error
-        return typeof lastArg === 'function' ?
-          lastArg(arguments[0]) :
-          undefined;
-      }
-
-      if (useLegacyPost && typeof lastArg === 'function') {
-        lastArg.apply(context, arguments);
-      }
-
-      var argsWithoutError = Array.prototype.slice.call(arguments, 1);
-      _this.execPost(name, context, argsWithoutError, function() {
-        if (arguments[0]) {
+        if (options.useErrorHandlers) {
+          var _options = { error: arguments[0] };
+          _this.execPost(name, context, argsWithoutError, _options, function(error) {
+            return typeof lastArg === 'function' ?
+              lastArg(error) :
+              undefined;
+          });
+        } else {
           return typeof lastArg === 'function' ?
             lastArg(arguments[0]) :
             undefined;
         }
+      } else {
+        if (useLegacyPost && typeof lastArg === 'function') {
+          lastArg.apply(context, arguments);
+        }
 
-        return typeof lastArg === 'function' && !useLegacyPost ?
-          lastArg.apply(context, arguments) :
-          undefined;
-      });
+        _this.execPost(name, context, argsWithoutError, function() {
+          if (arguments[0]) {
+            return typeof lastArg === 'function' ?
+              lastArg(arguments[0]) :
+              undefined;
+          }
+
+          return typeof lastArg === 'function' && !useLegacyPost ?
+            lastArg.apply(context, arguments) :
+            undefined;
+        });
+      }
     }));
   });
 };
 
-Kareem.prototype.createWrapper = function(name, fn, context) {
+Kareem.prototype.createWrapper = function(name, fn, context, options) {
   var _this = this;
   return function() {
     var args = Array.prototype.slice.call(arguments);
-    _this.wrap(name, fn, context, args);
+    _this.wrap(name, fn, context, args, options);
   };
 };
 

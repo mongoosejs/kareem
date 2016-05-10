@@ -125,6 +125,32 @@ describe('wrap()', function() {
       args);
   });
 
+  it('defers errors to post hooks if enabled', function(done) {
+    hooks.pre('cook', function(done) {
+      done(new Error('fail'));
+    });
+
+    hooks.post('cook', function(error, callback) {
+      callback(new Error('another error occurred'));
+    });
+
+    var args = [];
+    args.push(function(error) {
+      assert.equal(error.message, 'another error occurred');
+      done();
+    });
+
+    hooks.wrap(
+      'cook',
+      function(callback) {
+        assert.ok(false);
+        callback();
+      },
+      null,
+      args,
+      { useErrorHandlers: true });
+  });
+
   it('works with no args', function(done) {
     hooks.pre('cook', function(done) {
       done();
