@@ -186,6 +186,19 @@ Kareem.prototype.execPostSync = function(name, context) {
   }
 };
 
+function _handleWrapError(instance, error, name, context, args, options, callback) {
+  if (options.useErrorHandlers) {
+    var _options = { error: error };
+    return instance.execPost(name, context, args, _options, function(error) {
+      return typeof callback === 'function' && callback(error);
+    });
+  } else {
+    return typeof callback === 'function' ?
+      callback(error) :
+      undefined;
+  }
+}
+
 Kareem.prototype.wrap = function(name, fn, context, args, options) {
   var lastArg = (args.length > 0 ? args[args.length - 1] : null);
   var argsWithoutCb = typeof lastArg === 'function' ?
@@ -203,18 +216,8 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
 
   this.execPre(name, context, function(error) {
     if (error) {
-      if (options.useErrorHandlers) {
-        var _options = { error: error };
-        return _this.execPost(name, context, argsWithoutCb, _options, function(error) {
-          return typeof lastArg === 'function' ?
-            lastArg(error) :
-            undefined;
-        });
-      } else {
-        return typeof lastArg === 'function' ?
-          lastArg(error) :
-          undefined;
-      }
+      return _handleWrapError(_this, error, name, context, argsWithoutCb,
+        options, lastArg)
     }
 
     var end = (typeof lastArg === 'function' ? args.length - 1 : args.length);
@@ -223,18 +226,8 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
       var argsWithoutError = Array.prototype.slice.call(arguments, 1);
       if (arguments[0]) {
         // Assume error
-        if (options.useErrorHandlers) {
-          var _options = { error: arguments[0] };
-          _this.execPost(name, context, argsWithoutError, _options, function(error) {
-            return typeof lastArg === 'function' ?
-              lastArg(error) :
-              undefined;
-          });
-        } else {
-          return typeof lastArg === 'function' ?
-            lastArg(arguments[0]) :
-            undefined;
-        }
+        return _handleWrapError(_this, arguments[0], name, context,
+          argsWithoutError, options, lastArg);
       } else {
         if (useLegacyPost && typeof lastArg === 'function') {
           lastArg.apply(context, arguments);

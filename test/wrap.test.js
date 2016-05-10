@@ -151,6 +151,29 @@ describe('wrap()', function() {
       { useErrorHandlers: true });
   });
 
+  it('error handlers with no callback', function(done) {
+    hooks.pre('cook', function(done) {
+      done(new Error('fail'));
+    });
+
+    hooks.post('cook', function(error, callback) {
+      assert.equal(error.message, 'fail');
+      done();
+    });
+
+    var args = [];
+
+    hooks.wrap(
+      'cook',
+      function(callback) {
+        assert.ok(false);
+        callback();
+      },
+      null,
+      args,
+      { useErrorHandlers: true });
+  });
+
   it('works with no args', function(done) {
     hooks.pre('cook', function(done) {
       done();
