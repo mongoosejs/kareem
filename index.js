@@ -108,7 +108,11 @@ Kareem.prototype.execPreSync = function(name, context) {
   }
 };
 
-Kareem.prototype.execPost = function(name, context, args, callback) {
+Kareem.prototype.execPost = function(name, context, args, options, callback) {
+  if (arguments.length < 5) {
+    callback = options;
+    options = null;
+  }
   var posts = this._posts[name] || [];
   var numPosts = posts.length;
   var currentPost = 0;
@@ -119,29 +123,53 @@ Kareem.prototype.execPost = function(name, context, args, callback) {
     });
   }
 
+  var firstError = null;
+  if (options && options.error) {
+    firstError = options.error;
+  }
   var next = function() {
     var post = posts[currentPost];
 
-    if (post.length > args.length) {
-      post.apply(context, args.concat(function(error) {
-        if (error) {
-          return callback(error);
+    if (firstError) {
+      if (post.length === args.length + 2) {
+        post.apply(context, [firstError].concat(args).concat(function(error) {
+          if (error) {
+            firstError = error;
+          }
+          if (++currentPost >= numPosts) {
+            return callback.call(null, firstError);
+          }
+          next();
+        }));
+      } else {
+        if (++currentPost >= numPosts) {
+          return callback.call(null, firstError);
         }
+        next();
+      }
+    } else {
+      if (post.length === args.length + 1) {
+        post.apply(context, args.concat(function(error) {
+          if (error) {
+            firstError = error;
+            return next();
+          }
+
+          if (++currentPost >= numPosts) {
+            return callback.apply(null, [null].concat(args));
+          }
+
+          next();
+        }));
+      } else {
+        post.apply(context, args);
 
         if (++currentPost >= numPosts) {
           return callback.apply(null, [null].concat(args));
         }
 
         next();
-      }));
-    } else {
-      post.apply(context, args);
-
-      if (++currentPost >= numPosts) {
-        return callback.apply(null, [null].concat(args));
       }
-
-      next();
     }
   };
 

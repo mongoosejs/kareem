@@ -43,6 +43,85 @@ describe('execPost', function() {
       done();
     });
   });
+
+  it('error posts', function(done) {
+    var called = {};
+    hooks.post('cook', function(eggs, callback) {
+      called.first = true;
+      callback();
+    });
+
+    hooks.post('cook', function(eggs, callback) {
+      called.second = true;
+      callback(new Error('fail'));
+    });
+
+    hooks.post('cook', function(eggs, callback) {
+      assert.ok(false);
+    });
+
+    hooks.post('cook', function(error, eggs, callback) {
+      called.fourth = true;
+      assert.equal(error.message, 'fail');
+      callback(new Error('fourth'));
+    });
+
+    hooks.post('cook', function(error, eggs, callback) {
+      called.fifth = true;
+      assert.equal(error.message, 'fourth');
+      callback(new Error('fifth'));
+    });
+
+    hooks.execPost('cook', null, [4], function(error, eggs) {
+      assert.ok(error);
+      assert.equal(error.message, 'fifth');
+      assert.deepEqual(called, {
+        first: true,
+        second: true,
+        fourth: true,
+        fifth: true
+      });
+      done();
+    });
+  });
+
+  it('error posts with initial error', function(done) {
+    var called = {};
+
+    hooks.post('cook', function(eggs, callback) {
+      assert.ok(false);
+    });
+
+    hooks.post('cook', function(error, eggs, callback) {
+      called.second = true;
+      assert.equal(error.message, 'fail');
+      callback(new Error('second'));
+    });
+
+    hooks.post('cook', function(error, eggs, callback) {
+      called.third = true;
+      assert.equal(error.message, 'second');
+      callback(new Error('third'));
+    });
+
+    hooks.post('cook', function(error, eggs, callback) {
+      called.fourth = true;
+      assert.equal(error.message, 'third');
+      callback();
+    });
+
+    var options = { error: new Error('fail') };
+    hooks.execPost('cook', null, [4], options, function(error, eggs) {
+      assert.ok(error);
+      assert.equal(error.message, 'third');
+      assert.deepEqual(called, {
+        second: true,
+        third: true,
+        fourth: true
+      });
+      done();
+    });
+  });
 });
 
 describe('execPostSync', function() {
