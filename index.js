@@ -150,10 +150,11 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
       }
     } else {
       if (post.length === args.length + 2) {
+        // Skip error handlers if no error
         if (++currentPost >= numPosts) {
           return callback.apply(null, [null].concat(args));
         }
-        next();
+        return next();
       }
       if (post.length === args.length + 1) {
         post.apply(context, args.concat(function(error) {
