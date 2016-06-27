@@ -196,7 +196,14 @@ Kareem.prototype.execPostSync = function(name, context) {
 function _handleWrapError(instance, error, name, context, args, options, callback) {
   if (options.useErrorHandlers) {
     var _options = { error: error };
-    return instance.execPost(name, context, args, _options, function(error) {
+    var newArgs = [];
+    // Filter out trailing undefineds
+    for (var i = args.length; i >= 0; --i) {
+      if (newArgs.length > 0 || args[i] !== void 0) {
+        newArgs.unshift(args[i]);
+      }
+    }
+    return instance.execPost(name, context, newArgs, _options, function(error) {
       return typeof callback === 'function' && callback(error);
     });
   } else {
@@ -209,7 +216,7 @@ function _handleWrapError(instance, error, name, context, args, options, callbac
 Kareem.prototype.wrap = function(name, fn, context, args, options) {
   var lastArg = (args.length > 0 ? args[args.length - 1] : null);
   var argsWithoutCb = typeof lastArg === 'function' ?
-    args.slice(1) :
+    args.slice(0, args.length - 1) :
     args;
   var _this = this;
 
@@ -230,11 +237,12 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
     var end = (typeof lastArg === 'function' ? args.length - 1 : args.length);
 
     fn.apply(context, args.slice(0, end).concat(function() {
+      var args = arguments;
       var argsWithoutError = Array.prototype.slice.call(arguments, 1);
       if (arguments[0]) {
         // Assume error
         return _handleWrapError(_this, arguments[0], name, context,
-          argsWithoutError, options, lastArg);
+          args, options, lastArg);
       } else {
         if (useLegacyPost && typeof lastArg === 'function') {
           lastArg.apply(context, arguments);
