@@ -174,6 +174,27 @@ describe('wrap()', function() {
       { useErrorHandlers: true });
   });
 
+  it('error handlers with no error', function(done) {
+    hooks.post('cook', function(error, callback) {
+      callback(new Error('another error occurred'));
+    });
+
+    var args = [];
+    args.push(function(error) {
+      assert.ifError(error);
+      done();
+    });
+
+    hooks.wrap(
+      'cook',
+      function(callback) {
+        callback();
+      },
+      null,
+      args,
+      { useErrorHandlers: true });
+  });
+
   it('works with no args', function(done) {
     hooks.pre('cook', function(done) {
       done();

@@ -149,6 +149,12 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
         next();
       }
     } else {
+      if (post.length === args.length + 2) {
+        if (++currentPost >= numPosts) {
+          return callback.apply(null, [null].concat(args));
+        }
+        next();
+      }
       if (post.length === args.length + 1) {
         post.apply(context, args.concat(function(error) {
           if (error) {
