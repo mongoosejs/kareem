@@ -300,9 +300,15 @@ Kareem.prototype.post = function(name, fn) {
 Kareem.prototype.clone = function() {
   var n = new Kareem();
   for (var key in this._pres) {
+    if (!this._pres.hasOwnProperty(key)) {
+      continue;
+    }
     n._pres[key] = this._pres[key].slice();
   }
   for (var key in this._posts) {
+    if (!this._pres.hasOwnProperty(key)) {
+      continue;
+    }
     n._posts[key] = this._posts[key].slice();
   }
 
