@@ -306,7 +306,7 @@ Kareem.prototype.clone = function() {
     n._pres[key] = this._pres[key].slice();
   }
   for (var key in this._posts) {
-    if (!this._pres.hasOwnProperty(key)) {
+    if (!this._posts.hasOwnProperty(key)) {
       continue;
     }
     n._posts[key] = this._posts[key].slice();
