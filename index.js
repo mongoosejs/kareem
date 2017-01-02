@@ -130,9 +130,14 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
 
   var next = function() {
     var post = posts[currentPost];
+    var numArgs = 0;
+    var argLength = args.length;
+    for (var i = 0; i < argLength; ++i) {
+      numArgs += args[i] && args[i]._kareemIgnore ? 0 : 1;
+    }
 
     if (firstError) {
-      if (post.length === args.length + 2) {
+      if (post.length === numArgs + 2) {
         post.apply(context, [firstError].concat(args).concat(function(error) {
           if (error) {
             firstError = error;
@@ -149,14 +154,14 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
         next();
       }
     } else {
-      if (post.length === args.length + 2) {
+      if (post.length === numArgs + 2) {
         // Skip error handlers if no error
         if (++currentPost >= numPosts) {
           return callback.apply(null, [null].concat(args));
         }
         return next();
       }
-      if (post.length === args.length + 1) {
+      if (post.length === numArgs + 1) {
         post.apply(context, args.concat(function(error) {
           if (error) {
             firstError = error;
