@@ -132,13 +132,17 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
     var post = posts[currentPost];
     var numArgs = 0;
     var argLength = args.length;
+    var newArgs = [];
     for (var i = 0; i < argLength; ++i) {
       numArgs += args[i] && args[i]._kareemIgnore ? 0 : 1;
+      if (!args[i] || !args[i]._kareemIgnore) {
+        newArgs.push(args[i]);
+      }
     }
 
     if (firstError) {
       if (post.length === numArgs + 2) {
-        post.apply(context, [firstError].concat(args).concat(function(error) {
+        post.apply(context, [firstError].concat(newArgs).concat(function(error) {
           if (error) {
             firstError = error;
           }
@@ -162,7 +166,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
         return next();
       }
       if (post.length === numArgs + 1) {
-        post.apply(context, args.concat(function(error) {
+        post.apply(context, newArgs.concat(function(error) {
           if (error) {
             firstError = error;
             return next();
@@ -175,7 +179,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
           next();
         }));
       } else {
-        post.apply(context, args);
+        post.apply(context, newArgs);
 
         if (++currentPost >= numPosts) {
           return callback.apply(null, [null].concat(args));
