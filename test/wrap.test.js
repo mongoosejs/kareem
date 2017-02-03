@@ -130,7 +130,7 @@ describe('wrap()', function() {
       done(new Error('fail'));
     });
 
-    hooks.post('cook', function(error, callback) {
+    hooks.post('cook', function(error, res, callback) {
       callback(new Error('another error occurred'));
     });
 
@@ -148,7 +148,7 @@ describe('wrap()', function() {
       },
       null,
       args,
-      { useErrorHandlers: true });
+      { useErrorHandlers: true, numCallbackParams: 1 });
   });
 
   it('error handlers with no callback', function(done) {

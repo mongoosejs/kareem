@@ -239,8 +239,13 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
 
   this.execPre(name, context, function(error) {
     if (error) {
-      return _handleWrapError(_this, error, name, context, argsWithoutCb,
-        options, lastArg)
+      var numCallbackParams = options.numCallbackParams || 0;
+      var nulls = [];
+      for (var i = 0; i < numCallbackParams; ++i) {
+        nulls.push(null);
+      }
+      return _handleWrapError(_this, error, name, context, nulls,
+        options, lastArg);
     }
 
     var end = (typeof lastArg === 'function' ? args.length - 1 : args.length);
