@@ -5,13 +5,18 @@ function Kareem() {
   this._posts = {};
 }
 
-Kareem.prototype.execPre = function(name, context, callback) {
+Kareem.prototype.execPre = function(name, context, args, callback) {
+  if (arguments.length === 3) {
+    callback = args;
+    args = [];
+  }
   var pres = this._pres[name] || [];
   var numPres = pres.length;
   var numAsyncPres = pres.numAsync || 0;
   var currentPre = 0;
   var asyncPresLeft = numAsyncPres;
   var done = false;
+  var $args = args;
 
   if (!numPres) {
     return process.nextTick(function() {
@@ -74,10 +79,9 @@ Kareem.prototype.execPre = function(name, context, callback) {
 
         next.apply(context, arguments);
       }];
-      if (arguments.length >= 2) {
-        for (var i = 1; i < arguments.length; ++i) {
-          args.push(arguments[i]);
-        }
+      var _args = arguments.length >= 2 ? arguments : [null].concat($args);
+      for (var i = 1; i < _args.length; ++i) {
+        args.push(_args[i]);
       }
       pre.fn.apply(context, args);
     } else {
@@ -96,7 +100,7 @@ Kareem.prototype.execPre = function(name, context, callback) {
     }
   };
 
-  next();
+  next.apply(null, [null].concat(args));
 };
 
 Kareem.prototype.execPreSync = function(name, context) {
@@ -237,7 +241,7 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
   }
   options = options || {};
 
-  this.execPre(name, context, function(error) {
+  this.execPre(name, context, args, function(error) {
     if (error) {
       var numCallbackParams = options.numCallbackParams || 0;
       var nulls = [];
