@@ -333,4 +333,22 @@ Kareem.prototype.clone = function() {
   return n;
 };
 
+Kareem.prototype.merge = function(other) {
+  var ret = this.clone();
+  for (var key in other._pres) {
+    if (!other._pres.hasOwnProperty(key)) {
+      continue;
+    }
+    ret._pres[key] = (ret._pres[key] || []).concat(other._pres[key].slice());
+  }
+  for (var key in other._posts) {
+    if (!other._posts.hasOwnProperty(key)) {
+      continue;
+    }
+    ret._posts[key] = (ret._posts[key] || []).concat(other._posts[key].slice());
+  }
+
+  return ret;
+};
+
 module.exports = Kareem;
