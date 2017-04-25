@@ -322,6 +322,7 @@ Kareem.prototype.clone = function() {
       continue;
     }
     n._pres[key] = this._pres[key].slice();
+    n._pres[key].numAsync = this._pres[key].numAsync;
   }
   for (var key in this._posts) {
     if (!this._posts.hasOwnProperty(key)) {
@@ -340,6 +341,7 @@ Kareem.prototype.merge = function(other) {
       continue;
     }
     ret._pres[key] = (ret._pres[key] || []).concat(other._pres[key].slice());
+    ret._pres[key].numAsync += other._pres[key].numAsync;
   }
   for (var key in other._posts) {
     if (!other._posts.hasOwnProperty(key)) {
