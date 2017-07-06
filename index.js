@@ -146,7 +146,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
 
     if (firstError) {
       if (post.length === numArgs + 2) {
-        post.apply(context, [firstError].concat(newArgs).concat(function(error) {
+        post.apply(context, [firstError, null].concat(function(error) {
           if (error) {
             firstError = error;
           }
