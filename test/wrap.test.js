@@ -318,4 +318,25 @@ describe('wrap()', function() {
       },
       25);
   });
+
+  it('sync wrappers', function() {
+    var calledPre = 0;
+    var calledFn = 0;
+    var calledPost = 0;
+    hooks.pre('cook', function() {
+      ++calledPre;
+    });
+
+    hooks.post('cook', function() {
+      ++calledPost;
+    });
+
+    var wrapper = hooks.createWrapperSync('cook', function() { ++calledFn; });
+
+    wrapper();
+
+    assert.equal(calledPre, 1);
+    assert.equal(calledFn, 1);
+    assert.equal(calledPost, 1);
+  });
 });

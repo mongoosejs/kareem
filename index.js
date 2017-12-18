@@ -10,7 +10,7 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
     callback = args;
     args = [];
   }
-  var pres = this._pres[name] || [];
+  var pres = get(this._pres, name, []);
   var numPres = pres.length;
   var numAsyncPres = pres.numAsync || 0;
   var currentPre = 0;
@@ -106,7 +106,7 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
 };
 
 Kareem.prototype.execPreSync = function(name, context, args) {
-  var pres = this._pres[name] || [];
+  var pres = get(this._pres, name, []);
   var numPres = pres.length;
 
   for (var i = 0; i < numPres; ++i) {
@@ -119,7 +119,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
     callback = options;
     options = null;
   }
-  var posts = this._posts[name] || [];
+  var posts = get(this._posts, name, []);
   var numPosts = posts.length;
   var currentPost = 0;
 
@@ -200,7 +200,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
 };
 
 Kareem.prototype.execPostSync = function(name, context, args) {
-  var posts = this._posts[name] || [];
+  var posts = get(this._posts, name, []);
   var numPosts = posts.length;
 
   for (var i = 0; i < numPosts; ++i) {
@@ -298,7 +298,7 @@ Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
     isAsync = false;
   }
 
-  this._pres[name] = this._pres[name] || [];
+  this._pres[name] = get(this._pres, name, []);
   var pres = this._pres[name];
 
   if (isAsync) {
@@ -316,7 +316,7 @@ Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
 };
 
 Kareem.prototype.post = function(name, fn, unshift) {
-  this._posts[name] = this._posts[name] || [];
+  this._posts[name] = get(this._posts, name, []);
 
   if (unshift) {
     this._posts[name].unshift(fn);
@@ -327,18 +327,13 @@ Kareem.prototype.post = function(name, fn, unshift) {
 };
 
 Kareem.prototype.clone = function() {
-  var n = new Kareem();
-  for (var key in this._pres) {
-    if (!this._pres.hasOwnProperty(key)) {
-      continue;
-    }
+  const n = new Kareem();
+
+  for (let key of Object.keys(this._pres)) {
     n._pres[key] = this._pres[key].slice();
     n._pres[key].numAsync = this._pres[key].numAsync;
   }
-  for (var key in this._posts) {
-    if (!this._posts.hasOwnProperty(key)) {
-      continue;
-    }
+  for (let key of Object.keys(this._posts)) {
     n._posts[key] = this._posts[key].slice();
   }
 
@@ -347,21 +342,22 @@ Kareem.prototype.clone = function() {
 
 Kareem.prototype.merge = function(other) {
   var ret = this.clone();
-  for (var key in other._pres) {
-    if (!other._pres.hasOwnProperty(key)) {
-      continue;
-    }
-    ret._pres[key] = (ret._pres[key] || []).concat(other._pres[key].slice());
+  for (let key of Object.keys(other._pres)) {
+    ret._pres[key] = get(ret._pres, key, []).concat(other._pres[key].slice());
     ret._pres[key].numAsync += other._pres[key].numAsync;
   }
-  for (var key in other._posts) {
-    if (!other._posts.hasOwnProperty(key)) {
-      continue;
-    }
-    ret._posts[key] = (ret._posts[key] || []).concat(other._posts[key].slice());
+  for (let key of Object.keys(other._posts)) {
+    ret._posts[key] = get(ret._posts, key, []).concat(other._posts[key].slice());
   }
 
   return ret;
 };
+
+function get(obj, key, def) {
+  if (obj[key] != null) {
+    return obj[key];
+  }
+  return def;
+}
 
 module.exports = Kareem;

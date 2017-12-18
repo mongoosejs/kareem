@@ -35,6 +35,15 @@ describe('execPre', function() {
     });
   });
 
+  it('unshift', function() {
+    var f1 = function() {};
+    var f2 = function() {};
+    hooks.pre('cook', false, f1);
+    hooks.pre('cook', false, f2, null, true);
+    assert.strictEqual(hooks._pres['cook'][0].fn, f2);
+    assert.strictEqual(hooks._pres['cook'][1].fn, f1);
+  });
+
   it('handles async errors', function(done) {
     var execed = {};
 

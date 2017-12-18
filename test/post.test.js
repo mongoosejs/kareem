@@ -20,6 +20,15 @@ describe('execPost', function() {
     });
   });
 
+  it('unshift', function() {
+    var f1 = function() {};
+    var f2 = function() {};
+    hooks.post('cook', f1);
+    hooks.post('cook', f2, true);
+    assert.strictEqual(hooks._posts['cook'][0], f2);
+    assert.strictEqual(hooks._posts['cook'][1], f1);
+  });
+
   it('multiple posts', function(done) {
     hooks.post('cook', function(eggs, callback) {
       setTimeout(
