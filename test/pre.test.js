@@ -35,6 +35,25 @@ describe('execPre', function() {
     });
   });
 
+  it('sync errors', function(done) {
+    var called = 0;
+
+    hooks.pre('cook', function(next) {
+      throw new Error('woops!');
+    });
+
+    hooks.pre('cook', function(next) {
+      ++called;
+      next();
+    });
+
+    hooks.execPre('cook', null, function(err) {
+      assert.equal(err.message, 'woops!');
+      assert.equal(called, 0);
+      done();
+    });
+  });
+
   it('unshift', function() {
     var f1 = function() {};
     var f2 = function() {};

@@ -31,9 +31,8 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
     var pre = pres[currentPre];
 
     if (pre.isAsync) {
-      pre.fn.call(
-        context,
-        function(error) {
+      var args = [
+        once(function(error) {
           if (error) {
             if (done) {
               return;
@@ -47,8 +46,8 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
             return callback(null);
           }
           next.apply(context, arguments);
-        },
-        function(error) {
+        }),
+        once(function(error) {
           if (error) {
             if (done) {
               return;
@@ -59,46 +58,64 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
           if (--asyncPresLeft === 0 && currentPre >= numPres) {
             return callback(null);
           }
-        });
+        })
+      ];
+
+      try {
+        pre.fn.apply(context, args);
+      } catch (error) {
+        return args[0](error);
+      }
     } else if (pre.fn.length > 0) {
-      var args = [function(error) {
-        if (error) {
-          if (done) {
-            return;
+      var args = [
+        once(function(error) {
+          if (error) {
+            if (done) {
+              return;
+            }
+            done = true;
+            return callback(error);
           }
-          done = true;
-          return callback(error);
-        }
 
-        if (++currentPre >= numPres) {
-          if (asyncPresLeft > 0) {
-            // Leave parallel hooks to run
-            return;
-          } else {
-            return callback(null);
+          if (++currentPre >= numPres) {
+            if (asyncPresLeft > 0) {
+              // Leave parallel hooks to run
+              return;
+            } else {
+              return callback(null);
+            }
           }
-        }
 
-        next.apply(context, arguments);
-      }];
+          next.apply(context, arguments);
+        })
+      ];
       var _args = arguments.length >= 2 ? arguments : [null].concat($args);
       for (var i = 1; i < _args.length; ++i) {
         args.push(_args[i]);
       }
-      pre.fn.apply(context, args);
+      try {
+        pre.fn.apply(context, args);
+      } catch (error) {
+        return args[0](error);
+      }
     } else {
-      pre.fn.call(context);
+      var error = null;
+      try {
+        pre.fn.call(context);
+      } catch (err) {
+        error = err;
+      }
       if (++currentPre >= numPres) {
         if (asyncPresLeft > 0) {
           // Leave parallel hooks to run
           return;
         } else {
           return process.nextTick(function() {
-            callback(null);
+            callback(error);
           });
         }
       }
-      next();
+      next(error);
     }
   };
 
@@ -148,7 +165,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
 
     if (firstError) {
       if (post.length === numArgs + 2) {
-        post.apply(context, [firstError].concat(newArgs).concat(function(error) {
+        var _cb = once(function(error) {
           if (error) {
             firstError = error;
           }
@@ -156,7 +173,12 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
             return callback.call(null, firstError);
           }
           next();
-        }));
+        });
+        try {
+          post.apply(context, [firstError].concat(newArgs).concat([_cb]));
+        } catch (error) {
+          _cb(error);
+        }
       } else {
         if (++currentPost >= numPosts) {
           return callback.call(null, firstError);
@@ -172,7 +194,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
         return next();
       }
       if (post.length === numArgs + 1) {
-        post.apply(context, newArgs.concat(function(error) {
+        var _cb = once(function(error) {
           if (error) {
             firstError = error;
             return next();
@@ -183,15 +205,27 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
           }
 
           next();
-        }));
-      } else {
-        post.apply(context, newArgs);
+        });
 
-        if (++currentPost >= numPosts) {
-          return callback.apply(null, [null].concat(args));
+        try {
+          post.apply(context, newArgs.concat([_cb]));
+        } catch (error) {
+          _cb(error);
+        }
+      } else {
+        var error;
+        try {
+          post.apply(context, newArgs);
+        } catch (err) {
+          error = err;
+          firstError = err;
         }
 
-        next();
+        if (++currentPost >= numPosts) {
+          return callback.apply(null, [error].concat(args));
+        }
+
+        next(error);
       }
     }
   };
@@ -358,6 +392,18 @@ function get(obj, key, def) {
     return obj[key];
   }
   return def;
+}
+
+function once(fn) {
+  var called = false;
+  var _this = this;
+  return function() {
+    if (called) {
+      return;
+    }
+    called = true;
+    return fn.apply(_this, arguments);
+  };
 }
 
 module.exports = Kareem;
