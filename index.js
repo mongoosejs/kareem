@@ -32,7 +32,7 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
 
     if (pre.isAsync) {
       var args = [
-        once(function(error) {
+        decorateNextFn(function(error) {
           if (error) {
             if (done) {
               return;
@@ -47,7 +47,7 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
           }
           next.apply(context, arguments);
         }),
-        once(function(error) {
+        decorateNextFn(function(error) {
           if (error) {
             if (done) {
               return;
@@ -68,7 +68,7 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
       }
     } else if (pre.fn.length > 0) {
       var args = [
-        once(function(error) {
+        decorateNextFn(function(error) {
           if (error) {
             if (done) {
               return;
@@ -165,7 +165,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
 
     if (firstError) {
       if (post.length === numArgs + 2) {
-        var _cb = once(function(error) {
+        var _cb = decorateNextFn(function(error) {
           if (error) {
             firstError = error;
           }
@@ -194,7 +194,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
         return next();
       }
       if (post.length === numArgs + 1) {
-        var _cb = once(function(error) {
+        var _cb = decorateNextFn(function(error) {
           if (error) {
             firstError = error;
             return next();
@@ -289,7 +289,9 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
     }
 
     var end = (typeof lastArg === 'function' ? args.length - 1 : args.length);
-    fn.apply(context, args.slice(0, end).concat(function() {
+    fn.apply(context, args.slice(0, end).concat(_cb));
+
+    function _cb() {
       var args = arguments;
       var argsWithoutError = Array.prototype.slice.call(arguments, 1);
       if (options.nullResultByDefault && argsWithoutError.length === 0) {
@@ -312,7 +314,7 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
             undefined;
         });
       }
-    }));
+    }
   });
 };
 
@@ -394,15 +396,18 @@ function get(obj, key, def) {
   return def;
 }
 
-function once(fn) {
+function decorateNextFn(fn) {
   var called = false;
   var _this = this;
   return function() {
+    // Ensure this function can only be called once
     if (called) {
       return;
     }
     called = true;
-    return fn.apply(_this, arguments);
+    // Make sure to clear the stack so try/catch doesn't catch errors
+    // in subsequent middleware
+    return setImmediate(() => fn.apply(_this, arguments));
   };
 }
 
