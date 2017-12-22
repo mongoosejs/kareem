@@ -32,21 +32,7 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
 
     if (pre.isAsync) {
       var args = [
-        decorateNextFn(function(error) {
-          if (error) {
-            if (done) {
-              return;
-            }
-            done = true;
-            return callback(error);
-          }
-
-          ++currentPre;
-          if (asyncPresLeft === 0 && currentPre >= numPres) {
-            return callback(null);
-          }
-          next.apply(context, arguments);
-        }),
+        decorateNextFn(_next),
         decorateNextFn(function(error) {
           if (error) {
             if (done) {
@@ -61,65 +47,64 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
         })
       ];
 
-      try {
-        pre.fn.apply(context, args);
-      } catch (error) {
-        return args[0](error);
-      }
+      callMiddlewareFunction(pre.fn, context, args, args[0]);
     } else if (pre.fn.length > 0) {
-      var args = [
-        decorateNextFn(function(error) {
-          if (error) {
-            if (done) {
-              return;
-            }
-            done = true;
-            return callback(error);
-          }
-
-          if (++currentPre >= numPres) {
-            if (asyncPresLeft > 0) {
-              // Leave parallel hooks to run
-              return;
-            } else {
-              return callback(null);
-            }
-          }
-
-          next.apply(context, arguments);
-        })
-      ];
+      var args = [decorateNextFn(_next)];
       var _args = arguments.length >= 2 ? arguments : [null].concat($args);
       for (var i = 1; i < _args.length; ++i) {
         args.push(_args[i]);
       }
-      try {
-        pre.fn.apply(context, args);
-      } catch (error) {
-        return args[0](error);
-      }
+
+      callMiddlewareFunction(pre.fn, context, args, args[0]);
     } else {
-      var error = null;
+      let error = null;
+      let maybePromise = null;
       try {
-        pre.fn.call(context);
+        maybePromise = pre.fn.call(context);
       } catch (err) {
         error = err;
       }
-      if (++currentPre >= numPres) {
-        if (asyncPresLeft > 0) {
-          // Leave parallel hooks to run
-          return;
-        } else {
-          return process.nextTick(function() {
-            callback(error);
-          });
+
+      if (isPromise(maybePromise)) {
+        maybePromise.then(() => _next(), err => _next(err));
+      } else {
+        if (++currentPre >= numPres) {
+          if (asyncPresLeft > 0) {
+            // Leave parallel hooks to run
+            return;
+          } else {
+            return process.nextTick(function() {
+              callback(error);
+            });
+          }
         }
+        next(error);
       }
-      next(error);
     }
   };
 
   next.apply(null, [null].concat(args));
+
+  function _next(error) {
+    if (error) {
+      if (done) {
+        return;
+      }
+      done = true;
+      return callback(error);
+    }
+
+    if (++currentPre >= numPres) {
+      if (asyncPresLeft > 0) {
+        // Leave parallel hooks to run
+        return;
+      } else {
+        return callback(null);
+      }
+    }
+
+    next.apply(context, arguments);
+  }
 };
 
 Kareem.prototype.execPreSync = function(name, context, args) {
@@ -174,11 +159,9 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
           }
           next();
         });
-        try {
-          post.apply(context, [firstError].concat(newArgs).concat([_cb]));
-        } catch (error) {
-          _cb(error);
-        }
+
+        callMiddlewareFunction(post, context,
+          [firstError].concat(newArgs).concat([_cb]), _cb);
       } else {
         if (++currentPost >= numPosts) {
           return callback.call(null, firstError);
@@ -186,6 +169,19 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
         next();
       }
     } else {
+      const _cb = decorateNextFn(function(error) {
+        if (error) {
+          firstError = error;
+          return next();
+        }
+
+        if (++currentPost >= numPosts) {
+          return callback.apply(null, [null].concat(args));
+        }
+
+        next();
+      });
+
       if (post.length === numArgs + 2) {
         // Skip error handlers if no error
         if (++currentPost >= numPosts) {
@@ -194,31 +190,19 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
         return next();
       }
       if (post.length === numArgs + 1) {
-        var _cb = decorateNextFn(function(error) {
-          if (error) {
-            firstError = error;
-            return next();
-          }
-
-          if (++currentPost >= numPosts) {
-            return callback.apply(null, [null].concat(args));
-          }
-
-          next();
-        });
-
-        try {
-          post.apply(context, newArgs.concat([_cb]));
-        } catch (error) {
-          _cb(error);
-        }
+        callMiddlewareFunction(post, context, newArgs.concat([_cb]), _cb);
       } else {
-        var error;
+        let error;
+        let maybePromise;
         try {
-          post.apply(context, newArgs);
+          maybePromise = post.apply(context, newArgs);
         } catch (err) {
           error = err;
           firstError = err;
+        }
+
+        if (isPromise(maybePromise)) {
+          return maybePromise.then(() => _cb(), err => _cb(err));
         }
 
         if (++currentPost >= numPosts) {
@@ -394,6 +378,23 @@ function get(obj, key, def) {
     return obj[key];
   }
   return def;
+}
+
+function callMiddlewareFunction(fn, context, args, next) {
+  let maybePromise;
+  try {
+    maybePromise = fn.apply(context, args);
+  } catch (error) {
+    return next(error);
+  }
+
+  if (isPromise(maybePromise)) {
+    maybePromise.then(() => next(), err => next(err));
+  }
+}
+
+function isPromise(v) {
+  return v != null && typeof v.then === 'function';
 }
 
 function decorateNextFn(fn) {

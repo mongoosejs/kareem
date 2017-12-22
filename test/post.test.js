@@ -131,6 +131,25 @@ describe('execPost', function() {
       done();
     });
   });
+
+  it('supports returning a promise', function(done) {
+    var calledPost = 0;
+
+    hooks.post('cook', function() {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          ++calledPost;
+          resolve();
+        }, 100);
+      });
+    });
+
+    hooks.execPost('cook', null, [], {}, function(error) {
+      assert.ifError(error);
+      assert.equal(calledPost, 1);
+      done();
+    });
+  });
 });
 
 describe('execPostSync', function() {
