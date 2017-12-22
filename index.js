@@ -319,7 +319,7 @@ Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
   }
 
   this._pres[name] = get(this._pres, name, []);
-  var pres = this._pres[name];
+  const pres = this._pres[name];
 
   if (isAsync) {
     pres.numAsync = pres.numAsync || 0;
@@ -362,12 +362,21 @@ Kareem.prototype.clone = function() {
 
 Kareem.prototype.merge = function(other) {
   var ret = this.clone();
+
   for (let key of Object.keys(other._pres)) {
-    ret._pres[key] = get(ret._pres, key, []).concat(other._pres[key].slice());
-    ret._pres[key].numAsync += other._pres[key].numAsync;
+    const sourcePres = get(ret._pres, key, []);
+    const deduplicated = other._pres[key].
+      // Deduplicate based on `fn`
+      filter(p => !sourcePres.map(({fn}) => fn).includes(p.fn));
+    ret._pres[key] = sourcePres.concat(deduplicated);
+    ret._pres[key].numAsync = get(ret._pres[key], 'numAsync', 0);
+    ret._pres[key].numAsync += deduplicated.filter(p => p.isAsync).length;
   }
   for (let key of Object.keys(other._posts)) {
-    ret._posts[key] = get(ret._posts, key, []).concat(other._posts[key].slice());
+    const sourcePosts = get(ret._posts, key, []);
+    const deduplicated = other._posts[key].
+      filter(p => !sourcePosts.includes(p));
+    ret._posts[key] = sourcePosts.concat(deduplicated);
   }
 
   return ret;
