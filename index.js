@@ -367,7 +367,7 @@ Kareem.prototype.merge = function(other) {
     const sourcePres = get(ret._pres, key, []);
     const deduplicated = other._pres[key].
       // Deduplicate based on `fn`
-      filter(p => !sourcePres.map(_p => _p.fn).includes(p.fn));
+      filter(p => sourcePres.map(_p => _p.fn).indexOf(p.fn) === -1);
     ret._pres[key] = sourcePres.concat(deduplicated);
     ret._pres[key].numAsync = get(ret._pres[key], 'numAsync', 0);
     ret._pres[key].numAsync += deduplicated.filter(p => p.isAsync).length;
@@ -375,7 +375,7 @@ Kareem.prototype.merge = function(other) {
   for (let key of Object.keys(other._posts)) {
     const sourcePosts = get(ret._posts, key, []);
     const deduplicated = other._posts[key].
-      filter(p => !sourcePosts.includes(p));
+      filter(p => sourcePosts.indexOf(p) === -1);
     ret._posts[key] = sourcePosts.concat(deduplicated);
   }
 
