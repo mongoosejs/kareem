@@ -12,7 +12,7 @@
     "url": "git://github.com/vkarpov15/kareem.git"
   },
   "devDependencies": {
-    "acquit": "0.4.1",
+    "acquit": "0.5.1",
     "gulp": "3.8.10",
     "gulp-mocha": "2.0.0",
     "gulp-jscs": "1.4.0",
