@@ -417,7 +417,7 @@ function decorateNextFn(fn) {
     called = true;
     // Make sure to clear the stack so try/catch doesn't catch errors
     // in subsequent middleware
-    return setImmediate(() => fn.apply(_this, arguments));
+    return process.nextTick(() => fn.apply(_this, arguments));
   };
 }
 
