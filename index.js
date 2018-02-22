@@ -304,6 +304,10 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
 
 Kareem.prototype.createWrapper = function(name, fn, context, options) {
   var _this = this;
+  if (this._pres[name] == null && this._posts[name] == null) {
+    // Fast path: if there's no hooks for this function, just return the function
+    return fn;
+  }
   return function() {
     var _context = context || this;
     var args = Array.prototype.slice.call(arguments);
