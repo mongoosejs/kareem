@@ -302,9 +302,13 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
   });
 };
 
+Kareem.prototype.hasHooks = function(name) {
+  return this._pres[name] != null || this._posts[name] != null;
+};
+
 Kareem.prototype.createWrapper = function(name, fn, context, options) {
   var _this = this;
-  if (this._pres[name] == null && this._posts[name] == null) {
+  if (!this.hasHooks(name)) {
     // Fast path: if there's no hooks for this function, just return the
     // function wrapped in a nextTick()
     return function() {
