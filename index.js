@@ -253,18 +253,18 @@ function _handleWrapError(instance, error, name, context, args, options, callbac
 }
 
 Kareem.prototype.wrap = function(name, fn, context, args, options) {
-  var lastArg = (args.length > 0 ? args[args.length - 1] : null);
-  var argsWithoutCb = typeof lastArg === 'function' ?
+  const lastArg = (args.length > 0 ? args[args.length - 1] : null);
+  const argsWithoutCb = typeof lastArg === 'function' ?
     args.slice(0, args.length - 1) :
     args;
-  var _this = this;
+  const _this = this;
 
   options = options || {};
 
   this.execPre(name, context, args, function(error) {
     if (error) {
-      var numCallbackParams = options.numCallbackParams || 0;
-      var errorArgs = options.contextParameter ? [context] : [];
+      const numCallbackParams = options.numCallbackParams || 0;
+      const errorArgs = options.contextParameter ? [context] : [];
       for (var i = errorArgs.length; i < numCallbackParams; ++i) {
         errorArgs.push(null);
       }
@@ -272,12 +272,12 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
         options, lastArg);
     }
 
-    var end = (typeof lastArg === 'function' ? args.length - 1 : args.length);
+    const end = (typeof lastArg === 'function' ? args.length - 1 : args.length);
     fn.apply(context, args.slice(0, end).concat(_cb));
 
     function _cb() {
-      var args = arguments;
-      var argsWithoutError = Array.prototype.slice.call(arguments, 1);
+      const args = arguments;
+      const argsWithoutError = Array.prototype.slice.call(arguments, 1);
       if (options.nullResultByDefault && argsWithoutError.length === 0) {
         argsWithoutError.push(null);
       }
