@@ -260,6 +260,7 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
   const _this = this;
 
   options = options || {};
+  const checkForPromise = options.checkForPromise;
 
   this.execPre(name, context, args, function(error) {
     if (error) {
@@ -273,7 +274,24 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
     }
 
     const end = (typeof lastArg === 'function' ? args.length - 1 : args.length);
-    fn.apply(context, args.slice(0, end).concat(_cb));
+    const numParameters = fn.length;
+    const ret = fn.apply(context, args.slice(0, end).concat(_cb));
+
+    if (checkForPromise) {
+      if (ret != null && typeof ret.then === 'function') {
+        // Thenable, use it
+        return ret.then(
+          res => _cb(null, res),
+          err => _cb(err)
+        );
+      }
+
+      // If `fn()` doesn't have a callback argument and doesn't return a
+      // promise, assume it is sync
+      if (numParameters < end + 1) {
+        return _cb(null, ret);
+      }
+    }
 
     function _cb() {
       const args = arguments;
