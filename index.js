@@ -400,7 +400,7 @@ Kareem.prototype.merge = function(other) {
       // Deduplicate based on `fn`
       filter(p => sourcePres.map(_p => _p.fn).indexOf(p.fn) === -1);
     const combined = sourcePres.concat(deduplicated);
-    combined.numAsync = ret._pres.get(key).numAsync || 0;
+    combined.numAsync = sourcePres.numAsync || 0;
     combined.numAsync += deduplicated.filter(p => p.isAsync).length;
     ret._pres.set(key, combined);
   }
