@@ -1,5 +1,7 @@
-var assert = require('assert');
-var Kareem = require('../');
+'use strict';
+
+const assert = require('assert');
+const Kareem = require('../');
 
 describe('execPost', function() {
   var hooks;
@@ -25,8 +27,8 @@ describe('execPost', function() {
     var f2 = function() {};
     hooks.post('cook', f1);
     hooks.post('cook', f2, true);
-    assert.strictEqual(hooks._posts['cook'][0], f2);
-    assert.strictEqual(hooks._posts['cook'][1], f1);
+    assert.strictEqual(hooks._posts.get('cook')[0], f2);
+    assert.strictEqual(hooks._posts.get('cook')[1], f1);
   });
 
   it('multiple posts', function(done) {

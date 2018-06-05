@@ -1,8 +1,8 @@
 'use strict';
 
 function Kareem() {
-  this._pres = {};
-  this._posts = {};
+  this._pres = new Map();
+  this._posts = new Map();
 }
 
 Kareem.prototype.execPre = function(name, context, args, callback) {
@@ -218,10 +218,10 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
 };
 
 Kareem.prototype.execPostSync = function(name, context, args) {
-  var posts = get(this._posts, name, []);
-  var numPosts = posts.length;
+  const posts = get(this._posts, name, []);
+  const numPosts = posts.length;
 
-  for (var i = 0; i < numPosts; ++i) {
+  for (let i = 0; i < numPosts; ++i) {
     posts[i].apply(context, args || []);
   }
 };
@@ -321,7 +321,7 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
 };
 
 Kareem.prototype.hasHooks = function(name) {
-  return this._pres[name] != null || this._posts[name] != null;
+  return this._pres.has(name) || this._posts.has(name);
 };
 
 Kareem.prototype.createWrapper = function(name, fn, context, options) {
@@ -347,8 +347,8 @@ Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
     isAsync = false;
   }
 
-  this._pres[name] = get(this._pres, name, []);
-  const pres = this._pres[name];
+  const pres = get(this._pres, name, []);
+  this._pres.set(name, pres);
 
   if (isAsync) {
     pres.numAsync = pres.numAsync || 0;
@@ -365,25 +365,27 @@ Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
 };
 
 Kareem.prototype.post = function(name, fn, unshift) {
-  this._posts[name] = get(this._posts, name, []);
+  const hooks = get(this._posts, name, []);
 
   if (unshift) {
-    this._posts[name].unshift(fn);
+    hooks.unshift(fn);
   } else {
-    this._posts[name].push(fn);
+    hooks.push(fn);
   }
+  this._posts.set(name, hooks);
   return this;
 };
 
 Kareem.prototype.clone = function() {
   const n = new Kareem();
 
-  for (let key of Object.keys(this._pres)) {
-    n._pres[key] = this._pres[key].slice();
-    n._pres[key].numAsync = this._pres[key].numAsync;
+  for (let key of this._pres.keys()) {
+    const clone = this._pres.get(key).slice();
+    clone.numAsync = this._pres.get(key).numAsync;
+    n._pres.set(key, clone);
   }
-  for (let key of Object.keys(this._posts)) {
-    n._posts[key] = this._posts[key].slice();
+  for (let key of this._posts.keys()) {
+    n._posts.set(key, this._posts.get(key).slice());
   }
 
   return n;
@@ -392,28 +394,29 @@ Kareem.prototype.clone = function() {
 Kareem.prototype.merge = function(other) {
   var ret = this.clone();
 
-  for (let key of Object.keys(other._pres)) {
+  for (let key of other._pres.keys()) {
     const sourcePres = get(ret._pres, key, []);
-    const deduplicated = other._pres[key].
+    const deduplicated = other._pres.get(key).
       // Deduplicate based on `fn`
       filter(p => sourcePres.map(_p => _p.fn).indexOf(p.fn) === -1);
-    ret._pres[key] = sourcePres.concat(deduplicated);
-    ret._pres[key].numAsync = get(ret._pres[key], 'numAsync', 0);
-    ret._pres[key].numAsync += deduplicated.filter(p => p.isAsync).length;
+    const combined = sourcePres.concat(deduplicated);
+    combined.numAsync = ret._pres.get(key).numAsync || 0;
+    combined.numAsync += deduplicated.filter(p => p.isAsync).length;
+    ret._pres.set(key, combined);
   }
-  for (let key of Object.keys(other._posts)) {
+  for (let key of other._posts.keys()) {
     const sourcePosts = get(ret._posts, key, []);
-    const deduplicated = other._posts[key].
+    const deduplicated = other._posts.get(key).
       filter(p => sourcePosts.indexOf(p) === -1);
-    ret._posts[key] = sourcePosts.concat(deduplicated);
+    ret._posts.set(key, sourcePosts.concat(deduplicated));
   }
 
   return ret;
 };
 
-function get(obj, key, def) {
-  if (obj[key] != null) {
-    return obj[key];
+function get(map, key, def) {
+  if (map.has(key)) {
+    return map.get(key);
   }
   return def;
 }

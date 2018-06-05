@@ -355,8 +355,8 @@ describe('clone()', function() {
     k1.post('cook', function() {});
 
     var k2 = k1.clone();
-    assert.deepEqual(['cook'], Object.keys(k2._pres));
-    assert.deepEqual(['cook'], Object.keys(k2._posts));
+    assert.deepEqual(Array.from(k2._pres.keys()), ['cook']);
+    assert.deepEqual(Array.from(k2._posts.keys()), ['cook']);
   });
 });
 
@@ -371,9 +371,9 @@ describe('merge()', function() {
     var test2 = function() {};
     k2.pre('cook', test2);
     var k3 = k2.merge(k1);
-    assert.equal(k3._pres['cook'].length, 2);
-    assert.equal(k3._pres['cook'][0].fn, test2);
-    assert.equal(k3._pres['cook'][1].fn, test1);
-    assert.equal(k3._posts['cook'].length, 1);
+    assert.equal(k3._pres.get('cook').length, 2);
+    assert.equal(k3._pres.get('cook')[0].fn, test2);
+    assert.equal(k3._pres.get('cook')[1].fn, test1);
+    assert.equal(k3._posts.get('cook').length, 1);
   });
 });
