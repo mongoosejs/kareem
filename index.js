@@ -393,7 +393,7 @@ Kareem.prototype.clone = function() {
 
 Kareem.prototype.merge = function(other, clone) {
   clone = arguments.length === 1 ? true : clone;
-  var ret = clone ? this.clone() : ret;
+  var ret = clone ? this.clone() : this;
 
   for (let key of other._pres.keys()) {
     const sourcePres = get(ret._pres, key, []);
