@@ -320,6 +320,40 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
   });
 };
 
+Kareem.prototype.filter = function(fn) {
+  const clone = this.clone();
+
+  const pres = Array.from(clone._pres.keys());
+  for (const name of pres) {
+    const hooks = this._pres.get(name).
+      map(h => Object.assign({}, h, { name: name })).
+      filter(fn);
+
+    if (hooks.length === 0) {
+      clone._pres.delete(name);
+      continue;
+    }
+
+    clone._pres.set(name, hooks);
+  }
+
+  const posts = Array.from(clone._posts.keys());
+  for (const name of posts) {
+    const hooks = this._posts.get(name).
+      map(h => Object.assign({}, h, { name: name })).
+      filter(fn);
+
+    if (hooks.length === 0) {
+      clone._posts.delete(name);
+      continue;
+    }
+
+    clone._posts.set(name, hooks);
+  }
+
+  return clone;
+};
+
 Kareem.prototype.hasHooks = function(name) {
   return this._pres.has(name) || this._posts.has(name);
 };
