@@ -137,7 +137,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
   }
 
   var next = function() {
-    var post = posts[currentPost];
+    var post = posts[currentPost].fn;
     var numArgs = 0;
     var argLength = args.length;
     var newArgs = [];
@@ -222,7 +222,7 @@ Kareem.prototype.execPostSync = function(name, context, args) {
   const numPosts = posts.length;
 
   for (let i = 0; i < numPosts; ++i) {
-    posts[i].apply(context, args || []);
+    posts[i].fn.apply(context, args || []);
   }
 };
 
@@ -341,7 +341,11 @@ Kareem.prototype.createWrapper = function(name, fn, context, options) {
 };
 
 Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
-  if (typeof arguments[1] !== 'boolean') {
+  let options = {};
+  if (typeof isAsync === 'object' && isAsync != null) {
+    options = isAsync;
+    isAsync = options.isAsync;
+  } else if (typeof arguments[1] !== 'boolean') {
     error = fn;
     fn = isAsync;
     isAsync = false;
@@ -356,21 +360,27 @@ Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
   }
 
   if (unshift) {
-    pres.unshift({ fn: fn, isAsync: isAsync });
+    pres.unshift(Object.assign({}, options, { fn: fn, isAsync: isAsync }));
   } else {
-    pres.push({ fn: fn, isAsync: isAsync });
+    pres.push(Object.assign({}, options, { fn: fn, isAsync: isAsync }));
   }
 
   return this;
 };
 
-Kareem.prototype.post = function(name, fn, unshift) {
+Kareem.prototype.post = function(name, options, fn, unshift) {
   const hooks = get(this._posts, name, []);
 
+  if (typeof options === 'function') {
+    unshift = !!fn;
+    fn = options;
+    options = {};
+  }
+
   if (unshift) {
-    hooks.unshift(fn);
+    hooks.unshift(Object.assign({}, options, { fn: fn }));
   } else {
-    hooks.push(fn);
+    hooks.push(Object.assign({}, options, { fn: fn }));
   }
   this._posts.set(name, hooks);
   return this;

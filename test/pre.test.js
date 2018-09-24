@@ -65,6 +65,15 @@ describe('execPre', function() {
     assert.strictEqual(hooks._pres.get('cook')[1].fn, f1);
   });
 
+  it('arbitrary options', function() {
+    const f1 = function() {};
+    const f2 = function() {};
+    hooks.pre('cook', { foo: 'bar' }, f1);
+    hooks.pre('cook', { bar: 'baz' }, f2, null, true);
+    assert.equal(hooks._pres.get('cook')[1].foo, 'bar');
+    assert.equal(hooks._pres.get('cook')[0].bar, 'baz');
+  });
+
   it('handles async errors', function(done) {
     var execed = {};
 

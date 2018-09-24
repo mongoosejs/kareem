@@ -27,8 +27,17 @@ describe('execPost', function() {
     var f2 = function() {};
     hooks.post('cook', f1);
     hooks.post('cook', f2, true);
-    assert.strictEqual(hooks._posts.get('cook')[0], f2);
-    assert.strictEqual(hooks._posts.get('cook')[1], f1);
+    assert.strictEqual(hooks._posts.get('cook')[0].fn, f2);
+    assert.strictEqual(hooks._posts.get('cook')[1].fn, f1);
+  });
+
+  it('arbitrary options', function() {
+    const f1 = function() {};
+    const f2 = function() {};
+    hooks.post('cook', { foo: 'bar' }, f1);
+    hooks.post('cook', { bar: 'baz' }, f2, true);
+    assert.equal(hooks._posts.get('cook')[1].foo, 'bar');
+    assert.equal(hooks._posts.get('cook')[0].bar, 'baz');
   });
 
   it('multiple posts', function(done) {
