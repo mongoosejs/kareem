@@ -334,6 +334,8 @@ Kareem.prototype.filter = function(fn) {
       continue;
     }
 
+    hooks.numAsync = hooks.filter(h => h.isAsync).length;
+
     clone._pres.set(name, hooks);
   }
 
