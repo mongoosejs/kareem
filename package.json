@@ -14,7 +14,7 @@
   "devDependencies": {
     "nyc": "11.x",
     "mocha": "5.x",
-    "standard-version": "4.4.0"
+    "standard-version": "8.0.1"
   },
   "author": "Valeri Karpov <val@karpov.io>",
   "license": "Apache-2.0"
