@@ -12,6 +12,8 @@
     "url": "git://github.com/vkarpov15/kareem.git"
   },
   "devDependencies": {
+    "acquit": "1.x",
+    "acquit-ignore": "0.1.x",
     "nyc": "11.x",
     "mocha": "5.x",
     "standard-version": "4.4.0"
