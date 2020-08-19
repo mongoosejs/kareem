@@ -243,6 +243,30 @@ hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
 });
 ```
 
+#### It supports returning a promise
+
+You can also return a promise from your post hooks instead of calling
+`next()`. When the returned promise resolves, kareem will kick off the
+next middleware.
+
+
+```javascript
+hooks.post('cook', function(bacon) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      this.bacon = 3;
+      resolve();
+    }, 100);
+  });
+});
+
+var obj = { bacon: 0 };
+
+hooks.execPost('cook', obj, obj, function() {
+  assert.equal(obj.bacon, 3);
+});
+```
+
 ## wrap()
 
 acquit:ignore:end

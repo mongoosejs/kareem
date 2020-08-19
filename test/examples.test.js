@@ -242,6 +242,30 @@ describe('post hooks', function() {
       // acquit:ignore:end
     });
   });
+
+  /* You can also return a promise from your post hooks instead of calling
+   * `next()`. When the returned promise resolves, kareem will kick off the
+   * next middleware.
+   */
+  it('supports returning a promise', function(done) {
+    hooks.post('cook', function(bacon) {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          this.bacon = 3;
+          resolve();
+        }, 100);
+      });
+    });
+
+    var obj = { bacon: 0 };
+
+    hooks.execPost('cook', obj, obj, function() {
+      assert.equal(obj.bacon, 3);
+      // acquit:ignore:start
+      done();
+      // acquit:ignore:end
+    });
+  });
 });
 
 describe('wrap()', function() {
