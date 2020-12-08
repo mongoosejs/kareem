@@ -287,6 +287,26 @@ describe('execPre', function() {
       done();
     });
   });
+
+  it('handles sync errors in pre if there are more hooks', function(done) {
+    var execed = {};
+
+    hooks.pre('cook', function() {
+      execed.first = true;
+      throw new Error('Oops!');
+    });
+
+    hooks.pre('cook', function() {
+      execed.second = true;
+    });
+
+    hooks.execPre('cook', null, function(err) {
+      assert.ok(err);
+      assert.ok(execed.first);
+      assert.equal(err.message, 'Oops!');
+      done();
+    });
+  });
 });
 
 describe('execPreSync', function() {

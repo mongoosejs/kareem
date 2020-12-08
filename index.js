@@ -57,12 +57,13 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
 
       callMiddlewareFunction(pre.fn, context, args, args[0]);
     } else {
-      let error = null;
       let maybePromise = null;
       try {
         maybePromise = pre.fn.call(context);
       } catch (err) {
-        error = err;
+        if (err != null) {
+          return callback(err);
+        }
       }
 
       if (isPromise(maybePromise)) {
@@ -74,11 +75,11 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
             return;
           } else {
             return process.nextTick(function() {
-              callback(error);
+              callback(null);
             });
           }
         }
-        next(error);
+        next();
       }
     }
   };
