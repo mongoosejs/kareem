@@ -319,6 +319,30 @@ describe('wrap()', function() {
       25);
   });
 
+  it('catches sync errors', function(done) {
+    hooks.pre('cook', function(done) {
+      done();
+    });
+
+    hooks.post('cook', function(callback) {
+      callback();
+    });
+
+    var args = [];
+    args.push(function(error) {
+      assert.equal(error.message, 'oops!');
+      done();
+    });
+
+    hooks.wrap(
+      'cook',
+      function() {
+        throw new Error('oops!');
+      },
+      null,
+      args);
+  });
+
   it('sync wrappers', function() {
     var calledPre = 0;
     var calledFn = 0;

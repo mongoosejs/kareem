@@ -276,7 +276,12 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
 
     const end = (typeof lastArg === 'function' ? args.length - 1 : args.length);
     const numParameters = fn.length;
-    const ret = fn.apply(context, args.slice(0, end).concat(_cb));
+    let ret;
+    try {
+      ret = fn.apply(context, args.slice(0, end).concat(_cb));
+    } catch (err) {
+      return _cb(err);
+    }
 
     if (checkForPromise) {
       if (ret != null && typeof ret.then === 'function') {
