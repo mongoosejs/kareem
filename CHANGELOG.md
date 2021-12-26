@@ -1,5 +1,10 @@
 # Changelog
 
+<a name="2.3.3"></a>
+## 2.3.3 (2021-12-26)
+
+* fix: handle sync errors in `wrap()`
+
 <a name="2.3.2"></a>
 ## 2.3.2 (2020-12-08)
 
