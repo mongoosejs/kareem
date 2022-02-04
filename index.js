@@ -19,7 +19,7 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
   var $args = args;
 
   if (!numPres) {
-    return process.nextTick(function() {
+    return nextTick(function() {
       callback(null);
     });
   }
@@ -74,7 +74,7 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
             // Leave parallel hooks to run
             return;
           } else {
-            return process.nextTick(function() {
+            return nextTick(function() {
               callback(null);
             });
           }
@@ -132,7 +132,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
   }
 
   if (!numPosts) {
-    return process.nextTick(function() {
+    return nextTick(function() {
       callback.apply(null, [firstError].concat(args));
     });
   }
@@ -372,7 +372,7 @@ Kareem.prototype.createWrapper = function(name, fn, context, options) {
     // Fast path: if there's no hooks for this function, just return the
     // function wrapped in a nextTick()
     return function() {
-      process.nextTick(() => fn.apply(this, arguments));
+      nextTick(() => fn.apply(this, arguments));
     };
   }
   return function() {
@@ -510,8 +510,12 @@ function decorateNextFn(fn) {
     called = true;
     // Make sure to clear the stack so try/catch doesn't catch errors
     // in subsequent middleware
-    return process.nextTick(() => fn.apply(_this, arguments));
+    return nextTick(() => fn.apply(_this, arguments));
   };
+}
+
+const nextTick = process && process.nextTick || function (cb) { 
+  setTimeout(cb, 0); 
 }
 
 module.exports = Kareem;
