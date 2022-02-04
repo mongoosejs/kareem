@@ -57,17 +57,17 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
 
       callMiddlewareFunction(pre.fn, context, args, args[0]);
     } else {
-      let maybePromise = null;
+      let maybePromiseLike = null;
       try {
-        maybePromise = pre.fn.call(context);
+        maybePromiseLike = pre.fn.call(context);
       } catch (err) {
         if (err != null) {
           return callback(err);
         }
       }
 
-      if (isPromise(maybePromise)) {
-        maybePromise.then(() => _next(), err => _next(err));
+      if (isPromiseLike(maybePromiseLike)) {
+        maybePromiseLike.then(() => _next(), err => _next(err));
       } else {
         if (++currentPre >= numPres) {
           if (asyncPresLeft > 0) {
@@ -194,16 +194,16 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
         callMiddlewareFunction(post, context, newArgs.concat([_cb]), _cb);
       } else {
         let error;
-        let maybePromise;
+        let maybePromiseLike;
         try {
-          maybePromise = post.apply(context, newArgs);
+          maybePromiseLike = post.apply(context, newArgs);
         } catch (err) {
           error = err;
           firstError = err;
         }
 
-        if (isPromise(maybePromise)) {
-          return maybePromise.then(() => _cb(), err => _cb(err));
+        if (isPromiseLike(maybePromiseLike)) {
+          return maybePromiseLike.then(() => _cb(), err => _cb(err));
         }
 
         if (++currentPost >= numPosts) {
@@ -284,7 +284,7 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
     }
 
     if (checkForPromise) {
-      if (ret != null && typeof ret.then === 'function') {
+      if (isPromiseLike(ret)) {
         // Thenable, use it
         return ret.then(
           res => _cb(null, res),
@@ -483,20 +483,20 @@ function get(map, key, def) {
 }
 
 function callMiddlewareFunction(fn, context, args, next) {
-  let maybePromise;
+  let maybePromiseLike;
   try {
-    maybePromise = fn.apply(context, args);
+    maybePromiseLike = fn.apply(context, args);
   } catch (error) {
     return next(error);
   }
 
-  if (isPromise(maybePromise)) {
-    maybePromise.then(() => next(), err => next(err));
+  if (isPromiseLike(maybePromiseLike)) {
+    maybePromiseLike.then(() => next(), err => next(err));
   }
 }
 
-function isPromise(v) {
-  return v != null && typeof v.then === 'function';
+function isPromiseLike(v) {
+  return v instanceof Promise || (typeof v === 'object' && v !== null && typeof v.then === 'function');
 }
 
 function decorateNextFn(fn) {
