@@ -210,7 +210,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
           return callback.apply(null, [error].concat(args));
         }
 
-        next(error);
+        next();
       }
     }
   };
