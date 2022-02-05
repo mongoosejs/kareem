@@ -255,9 +255,8 @@ function _handleWrapError(instance, error, name, context, args, options, callbac
 
 Kareem.prototype.wrap = function(name, fn, context, args, options) {
   const lastArg = (args.length > 0 ? args[args.length - 1] : null);
-  const argsWithoutCb = typeof lastArg === 'function' ?
-    args.slice(0, args.length - 1) :
-    args;
+  const argsWithoutCb = Array.from(args);
+  typeof lastArg === 'function' && argsWithoutCb.pop();
   const _this = this;
 
   options = options || {};
@@ -274,11 +273,10 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
         options, lastArg);
     }
 
-    const end = (typeof lastArg === 'function' ? args.length - 1 : args.length);
     const numParameters = fn.length;
     let ret;
     try {
-      ret = fn.apply(context, args.slice(0, end).concat(_cb));
+      ret = fn.apply(context, argsWithoutCb.concat(_cb));
     } catch (err) {
       return _cb(err);
     }
@@ -294,7 +292,7 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
 
       // If `fn()` doesn't have a callback argument and doesn't return a
       // promise, assume it is sync
-      if (numParameters < end + 1) {
+      if (numParameters < argsWithoutCb.length + 1) {
         return _cb(null, ret);
       }
     }
