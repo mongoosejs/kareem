@@ -309,15 +309,12 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
           argsWithoutError, options, lastArg);
       } else {
         _this.execPost(name, context, argsWithoutError, function() {
-          if (arguments[0]) {
-            return typeof lastArg === 'function' ?
-              lastArg(arguments[0]) :
-              undefined;
+          if (lastArg === null) {
+            return;
           }
-
-          return typeof lastArg === 'function' ?
-            lastArg.apply(context, arguments) :
-            undefined;
+          arguments[0]
+            ? lastArg(arguments[0])
+            : lastArg.apply(context, arguments)
         });
       }
     }
