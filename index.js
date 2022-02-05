@@ -228,15 +228,14 @@ Kareem.prototype.execPostSync = function(name, context, args) {
 };
 
 Kareem.prototype.createWrapperSync = function(name, fn) {
-  var kareem = this;
-  return function syncWrapper() {
-    kareem.execPreSync(name, this, arguments);
+  return () => {
+    this.execPreSync(name, this, arguments);
 
-    var toReturn = fn.apply(this, arguments);
+    const ret = fn.apply(this, arguments);
 
-    kareem.execPostSync(name, this, [toReturn]);
+    this.execPostSync(name, this, [ret]);
 
-    return toReturn;
+    return ret;
   };
 }
 
