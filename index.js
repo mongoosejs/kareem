@@ -242,14 +242,11 @@ Kareem.prototype.createWrapperSync = function(name, fn) {
 
 function _handleWrapError(instance, error, name, context, args, options, callback) {
   if (options.useErrorHandlers) {
-    var _options = { error: error };
-    return instance.execPost(name, context, args, _options, function(error) {
+    return instance.execPost(name, context, args, { error: error }, function(error) {
       return typeof callback === 'function' && callback(error);
     });
   } else {
-    return typeof callback === 'function' ?
-      callback(error) :
-      undefined;
+    return typeof callback === 'function' && callback(error);
   }
 }
 
