@@ -514,7 +514,7 @@ function decorateNextFn(fn) {
   };
 }
 
-const nextTick = process && process.nextTick || function (cb) { 
+const nextTick = typeof process === 'object' && process !== null && process.nextTick || function nextTick(cb) { 
   setTimeout(cb, 0); 
 }
 
