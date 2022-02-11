@@ -1,5 +1,10 @@
 # Changelog
 
+<a name="2.3.4"></a>
+## 2.3.4 (2022-02-10)
+
+* perf: various performance improvements #27 #24 #23 #22 #21 #20
+
 <a name="2.3.3"></a>
 ## 2.3.3 (2021-12-26)
 
