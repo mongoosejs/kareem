@@ -10,7 +10,7 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
     callback = args;
     args = [];
   }
-  var pres = get(this._pres, name, []);
+  var pres = this._pres.get(name) || [];
   var numPres = pres.length;
   var numAsyncPres = pres.numAsync || 0;
   var currentPre = 0;
@@ -109,7 +109,7 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
 };
 
 Kareem.prototype.execPreSync = function(name, context, args) {
-  var pres = get(this._pres, name, []);
+  var pres = this._pres.get(name) || [];
   var numPres = pres.length;
 
   for (var i = 0; i < numPres; ++i) {
@@ -122,7 +122,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
     callback = options;
     options = null;
   }
-  var posts = get(this._posts, name, []);
+  var posts = this._posts.get(name) || [];
   var numPosts = posts.length;
   var currentPost = 0;
 
@@ -219,7 +219,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
 };
 
 Kareem.prototype.execPostSync = function(name, context, args) {
-  const posts = get(this._posts, name, []);
+  const posts = this._posts.get(name) || [];
   const numPosts = posts.length;
 
   for (let i = 0; i < numPosts; ++i) {
@@ -392,7 +392,7 @@ Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
     isAsync = false;
   }
 
-  const pres = get(this._pres, name, []);
+  const pres = this._pres.get(name) || [];
   this._pres.set(name, pres);
 
   if (isAsync) {
@@ -414,7 +414,7 @@ Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
 };
 
 Kareem.prototype.post = function(name, options, fn, unshift) {
-  const hooks = get(this._posts, name, []);
+  const hooks = this._posts.get(name) || [];
 
   if (typeof options === 'function') {
     unshift = !!fn;
@@ -455,7 +455,7 @@ Kareem.prototype.merge = function(other, clone) {
   var ret = clone ? this.clone() : this;
 
   for (let key of other._pres.keys()) {
-    const sourcePres = get(ret._pres, key, []);
+    const sourcePres = ret._pres.get(key) || [];
     const deduplicated = other._pres.get(key).
       // Deduplicate based on `fn`
       filter(p => sourcePres.map(_p => _p.fn).indexOf(p.fn) === -1);
@@ -465,7 +465,7 @@ Kareem.prototype.merge = function(other, clone) {
     ret._pres.set(key, combined);
   }
   for (let key of other._posts.keys()) {
-    const sourcePosts = get(ret._posts, key, []);
+    const sourcePosts = ret._posts.get(key) || [];
     const deduplicated = other._posts.get(key).
       filter(p => sourcePosts.indexOf(p) === -1);
     ret._posts.set(key, sourcePosts.concat(deduplicated));
@@ -473,13 +473,6 @@ Kareem.prototype.merge = function(other, clone) {
 
   return ret;
 };
-
-function get(map, key, def) {
-  if (map.has(key)) {
-    return map.get(key);
-  }
-  return def;
-}
 
 function callMiddlewareFunction(fn, context, args, next) {
   let maybePromise;
