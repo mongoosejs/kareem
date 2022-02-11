@@ -151,7 +151,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
 
     if (firstError) {
       if (post.length === numArgs + 2) {
-        var _cb = decorateNextFn(function(error) {
+        const _cb = decorateNextFn(function(error) {
           if (error) {
             firstError = error;
           }
@@ -380,11 +380,10 @@ Kareem.prototype.createWrapper = function(name, fn, context, options) {
 
 Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
   let options = {};
-  if (typeof isAsync === 'object' && isAsync != null) {
+  if (typeof isAsync === 'object' && isAsync !== null) {
     options = isAsync;
     isAsync = options.isAsync;
   } else if (typeof arguments[1] !== 'boolean') {
-    error = fn;
     fn = isAsync;
     isAsync = false;
   }
