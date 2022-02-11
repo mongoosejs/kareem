@@ -300,8 +300,8 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
     }
 
     function _cb() {
-      const args = arguments;
-      const argsWithoutError = Array.prototype.slice.call(arguments, 1);
+      const argsWithoutError = Array.from(arguments);
+      argsWithoutError.shift();
       if (options.nullResultByDefault && argsWithoutError.length === 0) {
         argsWithoutError.push(null);
       }
@@ -377,8 +377,7 @@ Kareem.prototype.createWrapper = function(name, fn, context, options) {
   }
   return function() {
     var _context = context || this;
-    var args = Array.prototype.slice.call(arguments);
-    _this.wrap(name, fn, _context, args, options);
+    _this.wrap(name, fn, _context, Array.from(arguments), options);
   };
 };
 
