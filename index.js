@@ -496,7 +496,7 @@ function callMiddlewareFunction(fn, context, args, next) {
 }
 
 function isPromiseLike(v) {
-  return v instanceof Promise || (typeof v === 'object' && v !== null && typeof v.then === 'function');
+  return (typeof v === 'object' && v !== null && typeof v.then === 'function');
 }
 
 function decorateNextFn(fn) {
