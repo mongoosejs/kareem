@@ -12,10 +12,8 @@ jobs:
       fail-fast: false
       matrix:
         node: [12, 14, 16, 18]
-        os: [ubuntu-18.04, ubuntu-20.04]
+        os: [ubuntu-20.04]
         include:
-          - os: ubuntu-18.04
-            mongo-os: ubuntu1804
           - os: ubuntu-20.04
             mongo-os: ubuntu2004
     name: Node ${{ matrix.node }}
