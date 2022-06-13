@@ -307,6 +307,24 @@ describe('execPre', function() {
       done();
     });
   });
+
+  it('supports skipWrappedFunction', function(done) {
+    var execed = {};
+
+    hooks.pre('cook', function(callback) {
+      callback(Kareem.skipWrappedFunction(42));
+    });
+
+    hooks.pre('cook', function() {
+      execed.second = true;
+    });
+
+    hooks.execPre('cook', null, function(err) {
+      assert.ok(execed.second);
+      assert.ok(err instanceof Kareem.skipWrappedFunction);
+      done();
+    });
+  });
 });
 
 describe('execPreSync', function() {
