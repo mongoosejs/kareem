@@ -286,7 +286,7 @@ Kareem.prototype.createWrapperSync = function(name, fn) {
 
     return result[0];
   };
-}
+};
 
 function _handleWrapError(instance, error, name, context, args, options, callback) {
   if (options.useErrorHandlers) {
@@ -365,7 +365,7 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
           }
           arguments[0]
             ? lastArg(arguments[0])
-            : lastArg.apply(context, arguments)
+            : lastArg.apply(context, arguments);
         });
       }
     }
@@ -553,6 +553,6 @@ function decorateNextFn(fn) {
 
 const nextTick = typeof process === 'object' && process !== null && process.nextTick || function nextTick(cb) { 
   setTimeout(cb, 0); 
-}
+};
 
 module.exports = Kareem;

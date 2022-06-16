@@ -2,6 +2,7 @@
 
 const assert = require('assert');
 const Kareem = require('../');
+const { beforeEach, describe, it } = require('mocha');
 
 describe('execPre', function() {
   var hooks;

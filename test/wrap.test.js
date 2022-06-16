@@ -1,5 +1,8 @@
+'use strict';
+
 var assert = require('assert');
 var Kareem = require('../');
+const { beforeEach, describe, it } = require('mocha');
 
 describe('wrap()', function() {
   var hooks;
