@@ -242,7 +242,12 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
         }
 
         if (isPromiseLike(maybePromiseLike)) {
-          return maybePromiseLike.then((res) => _cb(res), err => _cb(err));
+          return maybePromiseLike.then(
+            (res) => {
+              _cb(res instanceof Kareem.overwriteResult ? res : null)
+            },
+            err => _cb(err)
+          );
         }
 
         if (maybePromiseLike instanceof Kareem.overwriteResult) {
