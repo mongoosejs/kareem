@@ -1,5 +1,8 @@
 'use strict';
 
+/**
+ * Create a new instance
+ */
 function Kareem() {
   this._pres = new Map();
   this._posts = new Map();
@@ -21,6 +24,14 @@ Kareem.overwriteResult = function overwriteResult() {
   this.args = [...arguments];
 };
 
+/**
+ * Execute all "pre" hooks for "name"
+ * @param {String} name The hook name to execute
+ * @param {*} context Overwrite the "this" for the hook
+ * @param {Array|Function} args Optional arguments or directly the callback
+ * @param {Function} [callback] The callback to call when executing all hooks are finished
+ * @returns {void}
+ */
 Kareem.prototype.execPre = function(name, context, args, callback) {
   if (arguments.length === 3) {
     callback = args;
@@ -133,6 +144,13 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
   }
 };
 
+/**
+ * Execute all "pre" hooks for "name" synchronously
+ * @param {String} name The hook name to execute
+ * @param {*} context Overwrite the "this" for the hook
+ * @param {Array} [args] Apply custom arguments to the hook
+ * @returns {void}
+ */
 Kareem.prototype.execPreSync = function(name, context, args) {
   var pres = this._pres.get(name) || [];
   var numPres = pres.length;
@@ -142,6 +160,15 @@ Kareem.prototype.execPreSync = function(name, context, args) {
   }
 };
 
+/**
+ * Execute all "post" hooks for "name"
+ * @param {String} name The hook name to execute
+ * @param {*} context Overwrite the "this" for the hook
+ * @param {Array|Function} args Apply custom arguments to the hook
+ * @param {*} options Optional options or directly the callback
+ * @param {Function} [callback] The callback to call when executing all hooks are finished
+ * @returns {void}
+ */
 Kareem.prototype.execPost = function(name, context, args, options, callback) {
   if (arguments.length < 5) {
     callback = options;
@@ -266,6 +293,13 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
   next();
 };
 
+/**
+ * Execute all "post" hooks for "name" synchronously
+ * @param {String} name The hook name to execute
+ * @param {*} context Overwrite the "this" for the hook
+ * @param {Array|Function} args Apply custom arguments to the hook
+ * @returns {Array} The used arguments
+ */
 Kareem.prototype.execPostSync = function(name, context, args) {
   const posts = this._posts.get(name) || [];
   const numPosts = posts.length;
@@ -280,6 +314,12 @@ Kareem.prototype.execPostSync = function(name, context, args) {
   return args;
 };
 
+/**
+ * Create a synchronous wrapper for "fn"
+ * @param {String} name The name of the hook
+ * @param {Function} fn The function to wrap
+ * @returns {Function} The wrapped function
+ */
 Kareem.prototype.createWrapperSync = function(name, fn) {
   var kareem = this;
   return function syncWrapper() {
@@ -303,6 +343,16 @@ function _handleWrapError(instance, error, name, context, args, options, callbac
   }
 }
 
+/**
+ *
+ * @param {String} name The name of the hook
+ * @param {Function} fn The function for the hook
+ * @param {*} context Overwrite the "this" for the hook
+ * @param {Array} args Apply custom arguments to the hook
+ * @param {Object} [options]
+ * @param {Boolean} [options.checkForPromise]
+ * @returns {void}
+ */
 Kareem.prototype.wrap = function(name, fn, context, args, options) {
   const lastArg = (args.length > 0 ? args[args.length - 1] : null);
   let argsWithoutCb = Array.from(args);
@@ -377,6 +427,11 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
   });
 };
 
+/**
+ * Filter current instance for something specific and return the filtered clone
+ * @param {Function} fn The filter function
+ * @returns {Kareem} The cloned and filtered instance
+ */
 Kareem.prototype.filter = function(fn) {
   const clone = this.clone();
 
@@ -413,10 +468,23 @@ Kareem.prototype.filter = function(fn) {
   return clone;
 };
 
+/**
+ * Check for a "name" to exist either in pre or post hooks
+ * @param {String} name The name of the hook
+ * @returns {Boolean} "true" if found, "false" otherwise
+ */
 Kareem.prototype.hasHooks = function(name) {
   return this._pres.has(name) || this._posts.has(name);
 };
 
+/**
+ * Create a Wrapper for "fn" on "name" and return the wrapped function
+ * @param {String} name The name of the hook
+ * @param {Function} fn The function to wrap
+ * @param {*} context Overwrite the "this" for the hook
+ * @param {Object} [options]
+ * @returns {Function} The wrapped function
+ */
 Kareem.prototype.createWrapper = function(name, fn, context, options) {
   var _this = this;
   if (!this.hasHooks(name)) {
@@ -432,6 +500,15 @@ Kareem.prototype.createWrapper = function(name, fn, context, options) {
   };
 };
 
+/**
+ * Register a new hook for "pre"
+ * @param {String} name The name of the hook
+ * @param {Boolean} [isAsync]
+ * @param {Function} fn The function to register for "name"
+ * @param {never} error Unused
+ * @param {Boolean} [unshift] Wheter to "push" or to "unshift" the new hook
+ * @returns {Kareem}
+ */
 Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
   let options = {};
   if (typeof isAsync === 'object' && isAsync !== null) {
@@ -463,6 +540,14 @@ Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
   return this;
 };
 
+/**
+ * Register a new hook for "post"
+ * @param {String} name The name of the hook
+ * @param {Object} [options]
+ * @param {Function} fn The function to register for "name"
+ * @param {Boolean} [unshift] Wheter to "push" or to "unshift" the new hook
+ * @returns {Kareem}
+ */
 Kareem.prototype.post = function(name, options, fn, unshift) {
   const hooks = this._posts.get(name) || [];
 
@@ -485,6 +570,10 @@ Kareem.prototype.post = function(name, options, fn, unshift) {
   return this;
 };
 
+/**
+ * Clone the current instance
+ * @returns {Kareem} The cloned instance
+ */
 Kareem.prototype.clone = function() {
   const n = new Kareem();
 
@@ -500,6 +589,12 @@ Kareem.prototype.clone = function() {
   return n;
 };
 
+/**
+ * Merge "other" into self or "clone"
+ * @param {Kareem} other The instance to merge with
+ * @param {Kareem} [clone] The instance to merge onto (if not defined, using "this")
+ * @returns {Kareem} The merged instance
+ */
 Kareem.prototype.merge = function(other, clone) {
   clone = arguments.length === 1 ? true : clone;
   var ret = clone ? this.clone() : this;
