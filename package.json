@@ -16,7 +16,7 @@
   "devDependencies": {
     "acquit": "1.x",
     "acquit-ignore": "0.2.x",
-    "eslint": "8.15.0",
+    "eslint": "8.20.0",
     "mocha": "9.2.0",
     "nyc": "15.1.0"
   },
