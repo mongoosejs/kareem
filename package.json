@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "eslint .",
     "test": "mocha ./test/*",
-    "test-travis": "nyc mocha ./test/*",
+    "test-coverage": "nyc --reporter lcov mocha ./test/*",
     "docs": "node ./docs.js"
   },
   "repository": {
