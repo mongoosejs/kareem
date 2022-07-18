@@ -281,13 +281,13 @@ Kareem.prototype.execPostSync = function(name, context, args) {
 };
 
 Kareem.prototype.createWrapperSync = function(name, fn) {
-  const kareem = this;
+  const _this = this;
   return function syncWrapper() {
-    kareem.execPreSync(name, this, arguments);
+    _this.execPreSync(name, this, arguments);
 
     const toReturn = fn.apply(this, arguments);
 
-    const result = kareem.execPostSync(name, this, [toReturn]);
+    const result = _this.execPostSync(name, this, [toReturn]);
 
     return result[0];
   };
@@ -464,7 +464,7 @@ Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
 };
 
 Kareem.prototype.post = function(name, options, fn, unshift) {
-  const hooks = this._posts.get(name) || [];
+  const posts = this._posts.get(name) || [];
 
   if (typeof options === 'function') {
     unshift = !!fn;
@@ -477,11 +477,11 @@ Kareem.prototype.post = function(name, options, fn, unshift) {
   }
 
   if (unshift) {
-    hooks.unshift(Object.assign({}, options, { fn: fn }));
+    posts.unshift(Object.assign({}, options, { fn: fn }));
   } else {
-    hooks.push(Object.assign({}, options, { fn: fn }));
+    posts.push(Object.assign({}, options, { fn: fn }));
   }
-  this._posts.set(name, hooks);
+  this._posts.set(name, posts);
   return this;
 };
 
