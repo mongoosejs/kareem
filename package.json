@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "eslint .",
     "test": "mocha ./test/*",
-    "test-travis": "nyc mocha ./test/*"
+    "test-travis": "nyc mocha ./test/*",
+    "docs": "node ./docs.js"
   },
   "repository": {
     "type": "git",
