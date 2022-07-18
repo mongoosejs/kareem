@@ -1,13 +1,13 @@
 'use strict';
 
-var acquit = require('acquit');
+const acquit = require('acquit');
 
 require('acquit-ignore')();
 
-var content = require('fs').readFileSync('./test/examples.test.js').toString();
-var blocks = acquit.parse(content);
+const content = require('fs').readFileSync('./test/examples.test.js').toString();
+const blocks = acquit.parse(content);
 
-var mdOutput =
+let mdOutput =
   '# kareem\n\n' +
   '  [![Build Status](https://travis-ci.org/vkarpov15/kareem.svg?branch=master)](https://travis-ci.org/vkarpov15/kareem)\n' +
   '  [![Coverage Status](https://img.shields.io/coveralls/vkarpov15/kareem.svg)](https://coveralls.io/r/vkarpov15/kareem)\n\n' +
@@ -19,15 +19,15 @@ var mdOutput =
   '<img src="http://upload.wikimedia.org/wikipedia/commons/0/00/Kareem-Abdul-Jabbar_Lipofsky.jpg" width="220">\n\n' +
   '# API\n\n';
 
-for (var i = 0; i < blocks.length; ++i) {
-  var describe = blocks[i];
+for (let i = 0; i < blocks.length; ++i) {
+  const describe = blocks[i];
   mdOutput += '## ' + describe.contents + '\n\n';
   mdOutput += describe.comments[0] ?
     acquit.trimEachLine(describe.comments[0]) + '\n\n' :
     '';
 
-  for (var j = 0; j < describe.blocks.length; ++j) {
-    var it = describe.blocks[j];
+  for (let j = 0; j < describe.blocks.length; ++j) {
+    const it = describe.blocks[j];
     mdOutput += '#### It ' + it.contents + '\n\n';
     mdOutput += it.comments[0] ?
       acquit.trimEachLine(it.comments[0]) + '\n\n' :

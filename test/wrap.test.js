@@ -1,11 +1,11 @@
 'use strict';
 
-var assert = require('assert');
-var Kareem = require('../');
+const assert = require('assert');
+const Kareem = require('../');
 const { beforeEach, describe, it } = require('mocha');
 
 describe('wrap()', function() {
-  var hooks;
+  let hooks;
 
   beforeEach(function() {
     hooks = new Kareem();
@@ -20,9 +20,9 @@ describe('wrap()', function() {
       obj.tofu = 'no';
     });
 
-    var obj = { bacon: 0, eggs: 0 };
+    const obj = { bacon: 0, eggs: 0 };
 
-    var args = [obj];
+    const args = [obj];
     args.push(function(error, result) {
       assert.equal('error!', error);
       assert.ok(!result);
@@ -50,9 +50,9 @@ describe('wrap()', function() {
       obj.tofu = 'no';
     });
 
-    var obj = { bacon: 0, eggs: 0 };
+    const obj = { bacon: 0, eggs: 0 };
 
-    var args = [obj];
+    const args = [obj];
 
     hooks.wrap(
       'cook',
@@ -80,9 +80,9 @@ describe('wrap()', function() {
       obj.tofu = 'no';
     });
 
-    var obj = { bacon: 0, eggs: 0 };
+    const obj = { bacon: 0, eggs: 0 };
 
-    var args = [obj];
+    const args = [obj];
     args.push(function(error, result) {
       assert.equal('error!', error);
       assert.ok(!result);
@@ -109,9 +109,9 @@ describe('wrap()', function() {
       callback('error!');
     });
 
-    var obj = { bacon: 0, eggs: 0 };
+    const obj = { bacon: 0, eggs: 0 };
 
-    var args = [obj];
+    const args = [obj];
     args.push(function(error, result) {
       assert.equal('error!', error);
       assert.ok(!result);
@@ -137,7 +137,7 @@ describe('wrap()', function() {
       callback(new Error('another error occurred'));
     });
 
-    var args = [];
+    const args = [];
     args.push(function(error) {
       assert.equal(error.message, 'another error occurred');
       done();
@@ -159,12 +159,13 @@ describe('wrap()', function() {
       done(new Error('fail'));
     });
 
-    hooks.post('cook', function(error, callback) {
+    // unused parameter "_callback", but required for this to work at runtime
+    hooks.post('cook', function(error, _callback) {
       assert.equal(error.message, 'fail');
       done();
     });
 
-    var args = [];
+    const args = [];
 
     hooks.wrap(
       'cook',
@@ -182,7 +183,7 @@ describe('wrap()', function() {
       callback(new Error('another error occurred'));
     });
 
-    var args = [];
+    const args = [];
     args.push(function(error) {
       assert.ifError(error);
       done();
@@ -208,9 +209,9 @@ describe('wrap()', function() {
       callback();
     });
 
-    var obj = { bacon: 0, eggs: 0 };
+    const obj = { bacon: 0, eggs: 0 };
 
-    var args = [];
+    const args = [];
 
     hooks.wrap(
       'cook',
@@ -238,9 +239,9 @@ describe('wrap()', function() {
       callback();
     });
 
-    var obj = { bacon: 0, eggs: 0 };
+    const obj = { bacon: 0, eggs: 0 };
 
-    var args = [];
+    const args = [];
 
     hooks.wrap(
       'cook',
@@ -269,9 +270,9 @@ describe('wrap()', function() {
       callback();
     });
 
-    var obj = { bacon: 0, eggs: 0 };
+    const obj = { bacon: 0, eggs: 0 };
 
-    var args = [];
+    const args = [];
 
     hooks.wrap(
       'cook',
@@ -386,9 +387,9 @@ describe('wrap()', function() {
       callback('error!');
     });
 
-    var obj = { bacon: 0, eggs: 0 };
+    const obj = { bacon: 0, eggs: 0 };
 
-    var args = [];
+    const args = [];
 
     hooks.wrap(
       'cook',
@@ -416,7 +417,7 @@ describe('wrap()', function() {
       callback();
     });
 
-    var args = [];
+    const args = [];
     args.push(function(error) {
       assert.equal(error.message, 'oops!');
       done();
@@ -432,9 +433,9 @@ describe('wrap()', function() {
   });
 
   it('sync wrappers', function() {
-    var calledPre = 0;
-    var calledFn = 0;
-    var calledPost = 0;
+    let calledPre = 0;
+    let calledFn = 0;
+    let calledPost = 0;
     hooks.pre('cook', function() {
       ++calledPre;
     });
@@ -443,7 +444,7 @@ describe('wrap()', function() {
       ++calledPost;
     });
 
-    var wrapper = hooks.createWrapperSync('cook', function() { ++calledFn; });
+    const wrapper = hooks.createWrapperSync('cook', function() { ++calledFn; });
 
     wrapper();
 

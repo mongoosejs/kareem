@@ -26,14 +26,14 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
     callback = args;
     args = [];
   }
-  var pres = this._pres.get(name) || [];
-  var numPres = pres.length;
-  var numAsyncPres = pres.numAsync || 0;
-  var currentPre = 0;
-  var asyncPresLeft = numAsyncPres;
-  var done = false;
-  var $args = args;
-  var shouldSkipWrappedFunction = null;
+  const pres = this._pres.get(name) || [];
+  const numPres = pres.length;
+  const numAsyncPres = pres.numAsync || 0;
+  let currentPre = 0;
+  let asyncPresLeft = numAsyncPres;
+  let done = false;
+  const $args = args;
+  let shouldSkipWrappedFunction = null;
 
   if (!numPres) {
     return nextTick(function() {
@@ -41,14 +41,14 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
     });
   }
 
-  var next = function() {
+  function next() {
     if (currentPre >= numPres) {
       return;
     }
-    var pre = pres[currentPre];
+    const pre = pres[currentPre];
 
     if (pre.isAsync) {
-      var args = [
+      const args = [
         decorateNextFn(_next),
         decorateNextFn(function(error) {
           if (error) {
@@ -70,9 +70,9 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
 
       callMiddlewareFunction(pre.fn, context, args, args[0]);
     } else if (pre.fn.length > 0) {
-      var args = [decorateNextFn(_next)];
-      var _args = arguments.length >= 2 ? arguments : [null].concat($args);
-      for (var i = 1; i < _args.length; ++i) {
+      const args = [decorateNextFn(_next)];
+      const _args = arguments.length >= 2 ? arguments : [null].concat($args);
+      for (let i = 1; i < _args.length; ++i) {
         args.push(_args[i]);
       }
 
@@ -103,7 +103,7 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
         next();
       }
     }
-  };
+  }
 
   next.apply(null, [null].concat(args));
 
@@ -134,10 +134,10 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
 };
 
 Kareem.prototype.execPreSync = function(name, context, args) {
-  var pres = this._pres.get(name) || [];
-  var numPres = pres.length;
+  const pres = this._pres.get(name) || [];
+  const numPres = pres.length;
 
-  for (var i = 0; i < numPres; ++i) {
+  for (let i = 0; i < numPres; ++i) {
     pres[i].fn.apply(context, args || []);
   }
 };
@@ -147,11 +147,11 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
     callback = options;
     options = null;
   }
-  var posts = this._posts.get(name) || [];
-  var numPosts = posts.length;
-  var currentPost = 0;
+  const posts = this._posts.get(name) || [];
+  const numPosts = posts.length;
+  let currentPost = 0;
 
-  var firstError = null;
+  let firstError = null;
   if (options && options.error) {
     firstError = options.error;
   }
@@ -162,12 +162,12 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
     });
   }
 
-  var next = function() {
-    var post = posts[currentPost].fn;
-    var numArgs = 0;
-    var argLength = args.length;
-    var newArgs = [];
-    for (var i = 0; i < argLength; ++i) {
+  function next() {
+    const post = posts[currentPost].fn;
+    let numArgs = 0;
+    const argLength = args.length;
+    const newArgs = [];
+    for (let i = 0; i < argLength; ++i) {
       numArgs += args[i] && args[i]._kareemIgnore ? 0 : 1;
       if (!args[i] || !args[i]._kareemIgnore) {
         newArgs.push(args[i]);
@@ -261,7 +261,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
         next();
       }
     }
-  };
+  }
 
   next();
 };
@@ -281,11 +281,11 @@ Kareem.prototype.execPostSync = function(name, context, args) {
 };
 
 Kareem.prototype.createWrapperSync = function(name, fn) {
-  var kareem = this;
+  const kareem = this;
   return function syncWrapper() {
     kareem.execPreSync(name, this, arguments);
 
-    var toReturn = fn.apply(this, arguments);
+    const toReturn = fn.apply(this, arguments);
 
     const result = kareem.execPostSync(name, this, [toReturn]);
 
@@ -305,7 +305,7 @@ function _handleWrapError(instance, error, name, context, args, options, callbac
 
 Kareem.prototype.wrap = function(name, fn, context, args, options) {
   const lastArg = (args.length > 0 ? args[args.length - 1] : null);
-  let argsWithoutCb = Array.from(args);
+  const argsWithoutCb = Array.from(args);
   typeof lastArg === 'function' && argsWithoutCb.pop();
   const _this = this;
 
@@ -316,7 +316,7 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
     if (error && !(error instanceof Kareem.skipWrappedFunction)) {
       const numCallbackParams = options.numCallbackParams || 0;
       const errorArgs = options.contextParameter ? [context] : [];
-      for (var i = errorArgs.length; i < numCallbackParams; ++i) {
+      for (let i = errorArgs.length; i < numCallbackParams; ++i) {
         errorArgs.push(null);
       }
       return _handleWrapError(_this, error, name, context, errorArgs,
@@ -418,7 +418,7 @@ Kareem.prototype.hasHooks = function(name) {
 };
 
 Kareem.prototype.createWrapper = function(name, fn, context, options) {
-  var _this = this;
+  const _this = this;
   if (!this.hasHooks(name)) {
     // Fast path: if there's no hooks for this function, just return the
     // function wrapped in a nextTick()
@@ -427,7 +427,7 @@ Kareem.prototype.createWrapper = function(name, fn, context, options) {
     };
   }
   return function() {
-    var _context = context || this;
+    const _context = context || this;
     _this.wrap(name, fn, _context, Array.from(arguments), options);
   };
 };
@@ -488,12 +488,12 @@ Kareem.prototype.post = function(name, options, fn, unshift) {
 Kareem.prototype.clone = function() {
   const n = new Kareem();
 
-  for (let key of this._pres.keys()) {
+  for (const key of this._pres.keys()) {
     const clone = this._pres.get(key).slice();
     clone.numAsync = this._pres.get(key).numAsync;
     n._pres.set(key, clone);
   }
-  for (let key of this._posts.keys()) {
+  for (const key of this._posts.keys()) {
     n._posts.set(key, this._posts.get(key).slice());
   }
 
@@ -502,9 +502,9 @@ Kareem.prototype.clone = function() {
 
 Kareem.prototype.merge = function(other, clone) {
   clone = arguments.length === 1 ? true : clone;
-  var ret = clone ? this.clone() : this;
+  const ret = clone ? this.clone() : this;
 
-  for (let key of other._pres.keys()) {
+  for (const key of other._pres.keys()) {
     const sourcePres = ret._pres.get(key) || [];
     const deduplicated = other._pres.get(key).
       // Deduplicate based on `fn`
@@ -514,7 +514,7 @@ Kareem.prototype.merge = function(other, clone) {
     combined.numAsync += deduplicated.filter(p => p.isAsync).length;
     ret._pres.set(key, combined);
   }
-  for (let key of other._posts.keys()) {
+  for (const key of other._posts.keys()) {
     const sourcePosts = ret._posts.get(key) || [];
     const deduplicated = other._posts.get(key).
       filter(p => sourcePosts.indexOf(p) === -1);
@@ -542,8 +542,8 @@ function isPromiseLike(v) {
 }
 
 function decorateNextFn(fn) {
-  var called = false;
-  var _this = this;
+  let called = false;
+  const _this = this;
   return function() {
     // Ensure this function can only be called once
     if (called) {
@@ -556,8 +556,8 @@ function decorateNextFn(fn) {
   };
 }
 
-const nextTick = typeof process === 'object' && process !== null && process.nextTick || function nextTick(cb) { 
-  setTimeout(cb, 0); 
+const nextTick = typeof process === 'object' && process !== null && process.nextTick || function nextTick(cb) {
+  setTimeout(cb, 0);
 };
 
 module.exports = Kareem;

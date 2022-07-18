@@ -5,14 +5,14 @@ const Kareem = require('../');
 const { beforeEach, describe, it } = require('mocha');
 
 describe('execPre', function() {
-  var hooks;
+  let hooks;
 
   beforeEach(function() {
     hooks = new Kareem();
   });
 
   it('handles errors with multiple pres', function(done) {
-    var execed = {};
+    const execed = {};
 
     hooks.pre('cook', function(done) {
       execed.first = true;
@@ -39,9 +39,9 @@ describe('execPre', function() {
   });
 
   it('sync errors', function(done) {
-    var called = 0;
+    let called = 0;
 
-    hooks.pre('cook', function(next) {
+    hooks.pre('cook', function() {
       throw new Error('woops!');
     });
 
@@ -58,8 +58,8 @@ describe('execPre', function() {
   });
 
   it('unshift', function() {
-    var f1 = function() {};
-    var f2 = function() {};
+    const f1 = function() {};
+    const f2 = function() {};
     hooks.pre('cook', false, f1);
     hooks.pre('cook', false, f2, null, true);
     assert.strictEqual(hooks._pres.get('cook')[0].fn, f2);
@@ -80,7 +80,7 @@ describe('execPre', function() {
   });
 
   it('handles async errors', function(done) {
-    var execed = {};
+    const execed = {};
 
     hooks.pre('cook', true, function(next, done) {
       execed.first = true;
@@ -114,7 +114,7 @@ describe('execPre', function() {
   });
 
   it('handles async errors in next()', function(done) {
-    var execed = {};
+    const execed = {};
 
     hooks.pre('cook', true, function(next, done) {
       execed.first = true;
@@ -147,7 +147,7 @@ describe('execPre', function() {
   });
 
   it('handles async errors in next() when already done', function(done) {
-    var execed = {};
+    const execed = {};
 
     hooks.pre('cook', true, function(next, done) {
       execed.first = true;
@@ -180,7 +180,7 @@ describe('execPre', function() {
   });
 
   it('async pres with clone()', function(done) {
-    var execed = false;
+    let execed = false;
 
     hooks.pre('cook', true, function(next, done) {
       execed = true;
@@ -201,7 +201,7 @@ describe('execPre', function() {
   });
 
   it('returns correct error when async pre errors', function(done) {
-    var execed = {};
+    const execed = {};
 
     hooks.pre('cook', true, function(next, done) {
       execed.first = true;
@@ -233,7 +233,7 @@ describe('execPre', function() {
   });
 
   it('lets async pres run when fully sync pres are done', function(done) {
-    var execed = {};
+    const execed = {};
 
     hooks.pre('cook', true, function(next, done) {
       execed.first = true;
@@ -260,7 +260,7 @@ describe('execPre', function() {
   });
 
   it('allows passing arguments to the next pre', function(done) {
-    var execed = {};
+    const execed = {};
 
     hooks.pre('cook', function(next) {
       execed.first = true;
@@ -290,7 +290,7 @@ describe('execPre', function() {
   });
 
   it('handles sync errors in pre if there are more hooks', function(done) {
-    var execed = {};
+    const execed = {};
 
     hooks.pre('cook', function() {
       execed.first = true;
@@ -310,7 +310,7 @@ describe('execPre', function() {
   });
 
   it('supports skipWrappedFunction', function(done) {
-    var execed = {};
+    const execed = {};
 
     hooks.pre('cook', function(callback) {
       callback(Kareem.skipWrappedFunction(42));
@@ -329,14 +329,14 @@ describe('execPre', function() {
 });
 
 describe('execPreSync', function() {
-  var hooks;
+  let hooks;
 
   beforeEach(function() {
     hooks = new Kareem();
   });
 
   it('executes hooks synchronously', function() {
-    var execed = {};
+    const execed = {};
 
     hooks.pre('cook', function() {
       execed.first = true;
