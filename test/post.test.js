@@ -5,7 +5,7 @@ const Kareem = require('../');
 const { beforeEach, describe, it } = require('mocha');
 
 describe('execPost', function() {
-  var hooks;
+  let hooks;
 
   beforeEach(function() {
     hooks = new Kareem();
@@ -24,8 +24,8 @@ describe('execPost', function() {
   });
 
   it('unshift', function() {
-    var f1 = function() {};
-    var f2 = function() {};
+    const f1 = function() {};
+    const f2 = function() {};
     hooks.post('cook', f1);
     hooks.post('cook', f2, true);
     assert.strictEqual(hooks._posts.get('cook')[0].fn, f2);
@@ -44,7 +44,7 @@ describe('execPost', function() {
   it('throws error if no function', function() {
     assert.throws(() => hooks.post('test'), /got "undefined"/);
   });
- 
+
   it('multiple posts', function(done) {
     hooks.post('cook', function(eggs, callback) {
       setTimeout(
@@ -70,7 +70,7 @@ describe('execPost', function() {
   });
 
   it('error posts', function(done) {
-    var called = {};
+    const called = {};
     hooks.post('cook', function(eggs, callback) {
       called.first = true;
       callback();
@@ -81,7 +81,7 @@ describe('execPost', function() {
       callback(new Error('fail'));
     });
 
-    hooks.post('cook', function(eggs, callback) {
+    hooks.post('cook', function() {
       assert.ok(false);
     });
 
@@ -97,7 +97,7 @@ describe('execPost', function() {
       callback(new Error('fifth'));
     });
 
-    hooks.execPost('cook', null, [4], function(error, eggs) {
+    hooks.execPost('cook', null, [4], function(error) {
       assert.ok(error);
       assert.equal(error.message, 'fifth');
       assert.deepEqual(called, {
@@ -111,9 +111,9 @@ describe('execPost', function() {
   });
 
   it('error posts with initial error', function(done) {
-    var called = {};
+    const called = {};
 
-    hooks.post('cook', function(eggs, callback) {
+    hooks.post('cook', function() {
       assert.ok(false);
     });
 
@@ -135,8 +135,8 @@ describe('execPost', function() {
       callback();
     });
 
-    var options = { error: new Error('fail') };
-    hooks.execPost('cook', null, [4], options, function(error, eggs) {
+    const options = { error: new Error('fail') };
+    hooks.execPost('cook', null, [4], options, function(error) {
       assert.ok(error);
       assert.equal(error.message, 'third');
       assert.deepEqual(called, {
@@ -149,7 +149,7 @@ describe('execPost', function() {
   });
 
   it('supports returning a promise', function(done) {
-    var calledPost = 0;
+    let calledPost = 0;
 
     hooks.post('cook', function() {
       return new Promise(resolve => {
@@ -177,7 +177,7 @@ describe('execPost', function() {
       callback();
     });
 
-    var options = {};
+    const options = {};
     hooks.execPost('cook', null, [4], options, function(error, eggs) {
       assert.equal(eggs, 5);
       done();
@@ -194,7 +194,7 @@ describe('execPost', function() {
       callback();
     });
 
-    var options = {};
+    const options = {};
     hooks.execPost('cook', null, [4], options, function(error, eggs) {
       assert.ifError(error);
       assert.equal(eggs, 5);
@@ -203,7 +203,7 @@ describe('execPost', function() {
   });
 
   it('supports sync overwriteResult', function() {
-    hooks.post('cook', function(eggs) {
+    hooks.post('cook', function() {
       return Kareem.overwriteResult(5);
     });
 
@@ -211,13 +211,13 @@ describe('execPost', function() {
       assert.equal(eggs, 5);
     });
 
-    var options = {};
+    const options = {};
     const res = hooks.execPostSync('cook', null, [4], options);
     assert.deepEqual(res, [5]);
   });
 
   it('supports overwriteResult with promises', function(done) {
-    hooks.post('cook', function(eggs) {
+    hooks.post('cook', function() {
       return Promise.resolve(Kareem.overwriteResult(5));
     });
 
@@ -225,23 +225,23 @@ describe('execPost', function() {
       assert.equal(eggs, 5);
     });
 
-    var options = {};
+    const options = {};
     hooks.execPost('cook', null, [4], options, function(error, eggs) {
       assert.equal(eggs, 5);
       done();
     });
-  }); 
+  });
 });
 
 describe('execPostSync', function() {
-  var hooks;
+  let hooks;
 
   beforeEach(function() {
     hooks = new Kareem();
   });
 
   it('executes hooks synchronously', function() {
-    var execed = {};
+    const execed = {};
 
     hooks.post('cook', function() {
       execed.first = true;

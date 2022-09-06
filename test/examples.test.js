@@ -1,8 +1,8 @@
 'use strict';
 
-var assert = require('assert');
+const assert = require('assert');
 const { beforeEach, describe, it } = require('mocha');
-var Kareem = require('../');
+const Kareem = require('../');
 
 /* Much like [hooks](https://npmjs.org/package/hooks), kareem lets you define
  * pre and post hooks: pre hooks are called before a given function executes.
@@ -12,7 +12,7 @@ var Kareem = require('../');
  * appropriate, giving you more fine-grained control over your function hooks.
  */
 describe('pre hooks', function() {
-  var hooks;
+  let hooks;
 
   beforeEach(function() {
     hooks = new Kareem();
@@ -31,7 +31,7 @@ describe('pre hooks', function() {
    * when your pre hook is finished.
    */
   it('runs basic serial pre hooks', function(done) {
-    var count = 0;
+    let count = 0;
 
     hooks.pre('cook', function(done) {
       ++count;
@@ -47,8 +47,8 @@ describe('pre hooks', function() {
   });
 
   it('can run multipe pre hooks', function(done) {
-    var count1 = 0;
-    var count2 = 0;
+    let count1 = 0;
+    let count2 = 0;
 
     hooks.pre('cook', function(done) {
       ++count1;
@@ -73,8 +73,8 @@ describe('pre hooks', function() {
    * fully synchronous.
    */
   it('can run fully synchronous pre hooks', function(done) {
-    var count1 = 0;
-    var count2 = 0;
+    let count1 = 0;
+    let count2 = 0;
 
     hooks.pre('cook', function() {
       ++count1;
@@ -107,7 +107,7 @@ describe('pre hooks', function() {
       done();
     });
 
-    var obj = { bacon: 0, eggs: 0 };
+    const obj = { bacon: 0, eggs: 0 };
 
     // In the pre hooks, `this` will refer to `obj`
     hooks.execPre('cook', obj, function(error) {
@@ -136,7 +136,7 @@ describe('pre hooks', function() {
 
     hooks.pre('cook', true, function(next, done) {
       next();
-      var _this = this;
+      const _this = this;
       setTimeout(function() {
         _this.eggs = 4;
         done();
@@ -148,7 +148,7 @@ describe('pre hooks', function() {
       next();
     });
 
-    var obj = { bacon: 0, eggs: 0 };
+    const obj = { bacon: 0, eggs: 0 };
 
     hooks.execPre('cook', obj, function() {
       assert.equal(3, obj.bacon);
@@ -174,7 +174,7 @@ describe('pre hooks', function() {
       });
     });
 
-    var obj = { bacon: 0 };
+    const obj = { bacon: 0 };
 
     hooks.execPre('cook', obj, function() {
       assert.equal(3, obj.bacon);
@@ -186,7 +186,7 @@ describe('pre hooks', function() {
 });
 
 describe('post hooks', function() {
-  var hooks;
+  let hooks;
 
   beforeEach(function() {
     hooks = new Kareem();
@@ -218,7 +218,7 @@ describe('post hooks', function() {
   });
 
   it('can use synchronous post hooks', function(done) {
-    var execed = {};
+    const execed = {};
 
     hooks.post('cook', function(eggs, bacon) {
       execed.first = true;
@@ -251,7 +251,7 @@ describe('post hooks', function() {
    * next middleware.
    */
   it('supports returning a promise', function(done) {
-    hooks.post('cook', function(bacon) {
+    hooks.post('cook', function() {
       return new Promise(resolve => {
         setTimeout(() => {
           this.bacon = 3;
@@ -260,7 +260,7 @@ describe('post hooks', function() {
       });
     });
 
-    var obj = { bacon: 0 };
+    const obj = { bacon: 0 };
 
     hooks.execPost('cook', obj, obj, function() {
       assert.equal(obj.bacon, 3);
@@ -272,7 +272,7 @@ describe('post hooks', function() {
 });
 
 describe('wrap()', function() {
-  var hooks;
+  let hooks;
 
   beforeEach(function() {
     hooks = new Kareem();
@@ -289,7 +289,7 @@ describe('wrap()', function() {
 
     hooks.pre('cook', true, function(next, done) {
       next();
-      var _this = this;
+      const _this = this;
       setTimeout(function() {
         _this.eggs = 4;
         done();
@@ -305,9 +305,9 @@ describe('wrap()', function() {
       obj.tofu = 'no';
     });
 
-    var obj = { bacon: 0, eggs: 0 };
+    const obj = { bacon: 0, eggs: 0 };
 
-    var args = [obj];
+    const args = [obj];
     args.push(function(error, result) {
       assert.ifError(error);
       assert.equal(null, error);
@@ -337,7 +337,7 @@ describe('wrap()', function() {
 });
 
 describe('createWrapper()', function() {
-  var hooks;
+  let hooks;
 
   beforeEach(function() {
     hooks = new Kareem();
@@ -354,7 +354,7 @@ describe('createWrapper()', function() {
 
     hooks.pre('cook', true, function(next, done) {
       next();
-      var _this = this;
+      const _this = this;
       setTimeout(function() {
         _this.eggs = 4;
         done();
@@ -370,9 +370,9 @@ describe('createWrapper()', function() {
       obj.tofu = 'no';
     });
 
-    var obj = { bacon: 0, eggs: 0 };
+    const obj = { bacon: 0, eggs: 0 };
 
-    var cook = hooks.createWrapper(
+    const cook = hooks.createWrapper(
       'cook',
       function(o, callback) {
         assert.equal(3, obj.bacon);
@@ -400,11 +400,11 @@ describe('createWrapper()', function() {
 
 describe('clone()', function() {
   it('clones a Kareem object', function() {
-    var k1 = new Kareem();
+    const k1 = new Kareem();
     k1.pre('cook', function() {});
     k1.post('cook', function() {});
 
-    var k2 = k1.clone();
+    const k2 = k1.clone();
     assert.deepEqual(Array.from(k2._pres.keys()), ['cook']);
     assert.deepEqual(Array.from(k2._posts.keys()), ['cook']);
   });
@@ -412,15 +412,15 @@ describe('clone()', function() {
 
 describe('merge()', function() {
   it('pulls hooks from another Kareem object', function() {
-    var k1 = new Kareem();
-    var test1 = function() {};
+    const k1 = new Kareem();
+    const test1 = function() {};
     k1.pre('cook', test1);
     k1.post('cook', function() {});
 
-    var k2 = new Kareem();
-    var test2 = function() {};
+    const k2 = new Kareem();
+    const test2 = function() {};
     k2.pre('cook', test2);
-    var k3 = k2.merge(k1);
+    const k3 = k2.merge(k1);
     assert.equal(k3._pres.get('cook').length, 2);
     assert.equal(k3._pres.get('cook')[0].fn, test2);
     assert.equal(k3._pres.get('cook')[1].fn, test1);
