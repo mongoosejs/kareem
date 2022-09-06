@@ -344,7 +344,7 @@ function _handleWrapError(instance, error, name, context, args, options, callbac
 }
 
 /**
- *
+ * Executes pre hooks, followed by the wrapped function, followed by post hooks.
  * @param {String} name The name of the hook
  * @param {Function} fn The function for the hook
  * @param {*} context Overwrite the "this" for the hook
