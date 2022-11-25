@@ -110,6 +110,38 @@ describe('execPost', function() {
     });
   });
 
+  it('error posts with errorHandler option', function(done) {
+    const called = {};
+    hooks.post('cook', function(eggs, callback) {
+      called.first = true;
+      callback();
+    });
+
+    hooks.post('cook', function(eggs, callback) {
+      called.second = true;
+      callback(new Error('fail'));
+    });
+
+    hooks.post('cook', function() {
+      assert.ok(false);
+    });
+
+    hooks.post('cook', { errorHandler: true }, function() {
+      called.fourth = true;
+      return Promise.resolve();
+    });
+
+    hooks.execPost('cook', null, [4], function(error) {
+      assert.ok(error);
+      assert.deepEqual(called, {
+        first: true,
+        second: true,
+        fourth: true
+      });
+      done();
+    });
+  });
+
   it('error posts with initial error', function(done) {
     const called = {};
 

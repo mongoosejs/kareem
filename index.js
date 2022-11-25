@@ -202,7 +202,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
     }
 
     if (firstError) {
-      if (post.length === numArgs + 2) {
+      if (isErrorHandlingMiddleware(posts[currentPost], numArgs)) {
         const _cb = decorateNextFn(function(error) {
           if (error) {
             if (error instanceof Kareem.overwriteResult) {
@@ -249,7 +249,7 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
         next();
       });
 
-      if (post.length === numArgs + 2) {
+      if (isErrorHandlingMiddleware(posts[currentPost], numArgs)) {
         // Skip error handlers if no error
         if (++currentPost >= numPosts) {
           return callback.apply(null, [null].concat(args));
@@ -654,5 +654,12 @@ function decorateNextFn(fn) {
 const nextTick = typeof process === 'object' && process !== null && process.nextTick || function nextTick(cb) {
   setTimeout(cb, 0);
 };
+
+function isErrorHandlingMiddleware(post, numArgs) {
+  if (post.errorHandler) {
+    return true;
+  }
+  return post.fn.length === numArgs + 2;
+}
 
 module.exports = Kareem;
