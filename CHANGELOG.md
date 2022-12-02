@@ -1,5 +1,10 @@
 # Changelog
 
+<a name="2.5.0"></a>
+## 2.5.0 (2022-12-01)
+
+* feat: add errorHandler option to `post()` #34
+
 <a name="2.4.0"></a>
 ## 2.4.0 (2022-06-13)
 
