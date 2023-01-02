@@ -289,6 +289,41 @@ describe('execPre', function() {
     });
   });
 
+  it('avoids passing final callback to pre', function(done) {
+    const execed = {};
+
+    hooks.pre('cook', function(next) {
+      execed.first = true;
+      assert.equal(arguments.length, 1);
+      next(null, 'test');
+    });
+
+    hooks.pre('cook', function(next, p, _cb) {
+      execed.second = true;
+      assert.equal(p, 'test');
+      assert.equal(arguments.length, 2);
+      next();
+    });
+
+    hooks.pre('cook', function(next, p) {
+      execed.third = true;
+      assert.ok(!p);
+      assert.equal(arguments.length, 1);
+      next();
+    });
+
+    hooks.execPre('cook', null, [finalCb], function(err) {
+      assert.ifError(err);
+      assert.equal(3, Object.keys(execed).length);
+      assert.ok(execed.first);
+      assert.ok(execed.second);
+      assert.ok(execed.third);
+      done();
+    });
+
+    function finalCb() {}
+  });
+
   it('handles sync errors in pre if there are more hooks', function(done) {
     const execed = {};
 
