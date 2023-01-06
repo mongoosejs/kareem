@@ -1,5 +1,10 @@
 # Changelog
 
+<a name="2.5.1"></a>
+## 2.5.1 (2023-01-06)
+
+* fix: avoid passing final callback to pre hook, because calling the callback can mess up hook execution #36 Automattic/mongoose#12836
+
 <a name="2.5.0"></a>
 ## 2.5.0 (2022-12-01)
 
