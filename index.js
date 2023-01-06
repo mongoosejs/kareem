@@ -84,6 +84,9 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
       const args = [decorateNextFn(_next)];
       const _args = arguments.length >= 2 ? arguments : [null].concat($args);
       for (let i = 1; i < _args.length; ++i) {
+        if (i === _args.length - 1 && typeof _args[i] === 'function') {
+          continue; // skip callbacks to avoid accidentally calling the callback from a hook
+        }
         args.push(_args[i]);
       }
 
