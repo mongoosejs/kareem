@@ -1,5 +1,10 @@
 # Changelog
 
+<a name="2.6.0"></a>
+## 2.6.0 (2024-03-04)
+
+* feat: add TypeScript types
+
 <a name="2.5.1"></a>
 ## 2.5.1 (2023-01-06)
 
