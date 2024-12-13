@@ -39,18 +39,18 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
   }
   const pres = this._pres.get(name) || [];
   const numPres = pres.length;
+  if (!numPres) {
+    return nextTick(function() {
+      callback(null);
+    });
+  }
+
   const numAsyncPres = pres.numAsync || 0;
   let currentPre = 0;
   let asyncPresLeft = numAsyncPres;
   let done = false;
   const $args = args;
   let shouldSkipWrappedFunction = null;
-
-  if (!numPres) {
-    return nextTick(function() {
-      callback(null);
-    });
-  }
 
   function next() {
     if (currentPre >= numPres) {
@@ -179,7 +179,6 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
   }
   const posts = this._posts.get(name) || [];
   const numPosts = posts.length;
-  let currentPost = 0;
 
   let firstError = null;
   if (options && options.error) {
@@ -191,7 +190,8 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
       callback.apply(null, [firstError].concat(args));
     });
   }
-
+  let currentPost = 0;
+  
   function next() {
     const post = posts[currentPost].fn;
     let numArgs = 0;
