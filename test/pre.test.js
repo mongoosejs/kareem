@@ -11,7 +11,7 @@ describe('execPre', function() {
     hooks = new Kareem();
   });
 
-  it('handles errors with multiple pres', function(done) {
+  it('handles errors with multiple pres', async function() {
     const execed = {};
 
     hooks.pre('cook', function(done) {
@@ -29,16 +29,13 @@ describe('execPre', function() {
       done();
     });
 
-    hooks.execPre('cook', null, function(err) {
-      assert.equal('error!', err);
-      assert.equal(2, Object.keys(execed).length);
-      assert.ok(execed.first);
-      assert.ok(execed.second);
-      done();
-    });
+    await assert.rejects(hooks.execPre('cook', null), /error!/);
+    assert.equal(2, Object.keys(execed).length);
+    assert.ok(execed.first);
+    assert.ok(execed.second);
   });
 
-  it('sync errors', function(done) {
+  it('sync errors', async function() {
     let called = 0;
 
     hooks.pre('cook', function() {
@@ -50,11 +47,8 @@ describe('execPre', function() {
       next();
     });
 
-    hooks.execPre('cook', null, function(err) {
-      assert.equal(err.message, 'woops!');
-      assert.equal(called, 0);
-      done();
-    });
+    await assert.rejects(hooks.execPre('cook', null), /woops!/);
+    assert.equal(called, 0);
   });
 
   it('unshift', function() {
@@ -79,7 +73,7 @@ describe('execPre', function() {
     assert.equal(hooks._pres.get('cook')[0].bar, 'baz');
   });
 
-  it('handles async errors', function(done) {
+  it('handles async errors', async function() {
     const execed = {};
 
     hooks.pre('cook', true, function(next, done) {
@@ -104,16 +98,14 @@ describe('execPre', function() {
       next();
     });
 
-    hooks.execPre('cook', null, function(err) {
-      assert.equal('error!', err);
-      assert.equal(2, Object.keys(execed).length);
-      assert.ok(execed.first);
-      assert.ok(execed.second);
-      done();
-    });
+    const err = await hooks.execPre('cook', null).then(() => null, err => err);
+    assert.equal('error!', err);
+    assert.equal(2, Object.keys(execed).length);
+    assert.ok(execed.first);
+    assert.ok(execed.second);
   });
 
-  it('handles async errors in next()', function(done) {
+  it('handles async errors in next()', async function() {
     const execed = {};
 
     hooks.pre('cook', true, function(next, done) {
@@ -137,16 +129,14 @@ describe('execPre', function() {
         5);
     });
 
-    hooks.execPre('cook', null, function(err) {
-      assert.equal('error!', err);
-      assert.equal(2, Object.keys(execed).length);
-      assert.ok(execed.first);
-      assert.ok(execed.second);
-      done();
-    });
+    const err = await hooks.execPre('cook', null).then(() => null, err => err);
+    assert.equal('error!', err);
+    assert.equal(2, Object.keys(execed).length);
+    assert.ok(execed.first);
+    assert.ok(execed.second);
   });
 
-  it('handles async errors in next() when already done', function(done) {
+  it('handles async errors in next() when already done', async function() {
     const execed = {};
 
     hooks.pre('cook', true, function(next, done) {
@@ -164,22 +154,20 @@ describe('execPre', function() {
       execed.second = true;
       setTimeout(
         function() {
-          next('error!');
+          next();
           done('another error!');
         },
         25);
     });
 
-    hooks.execPre('cook', null, function(err) {
-      assert.equal('other error!', err);
-      assert.equal(2, Object.keys(execed).length);
-      assert.ok(execed.first);
-      assert.ok(execed.second);
-      done();
-    });
+    const err = await hooks.execPre('cook', null).then(() => null, err => err);
+    assert.equal('other error!', err);
+    assert.equal(2, Object.keys(execed).length);
+    assert.ok(execed.first);
+    assert.ok(execed.second);
   });
 
-  it('async pres with clone()', function(done) {
+  it('async pres with clone()', async function() {
     let execed = false;
 
     hooks.pre('cook', true, function(next, done) {
@@ -193,14 +181,11 @@ describe('execPre', function() {
       next();
     });
 
-    hooks.clone().execPre('cook', null, function(err) {
-      assert.ifError(err);
-      assert.ok(execed);
-      done();
-    });
+    await hooks.clone().execPre('cook', null);
+    assert.ok(execed);
   });
 
-  it('returns correct error when async pre errors', function(done) {
+  it('returns correct error when async pre errors', async function() {
     const execed = {};
 
     hooks.pre('cook', true, function(next, done) {
@@ -223,16 +208,15 @@ describe('execPre', function() {
         15);
     });
 
-    hooks.execPre('cook', null, function(err) {
-      assert.equal('other error!', err);
-      assert.equal(2, Object.keys(execed).length);
-      assert.ok(execed.first);
-      assert.ok(execed.second);
-      done();
-    });
+    const err = await hooks.execPre('cook', null).then(() => null, err => err);
+    // In kareem@3.x, `next()` errors take precedence over `done()` errors
+    assert.equal('error!', err);
+    assert.equal(2, Object.keys(execed).length);
+    assert.ok(execed.first);
+    assert.ok(execed.second);
   });
 
-  it('lets async pres run when fully sync pres are done', function(done) {
+  it('lets async pres run when fully sync pres are done', async function() {
     const execed = {};
 
     hooks.pre('cook', true, function(next, done) {
@@ -250,81 +234,13 @@ describe('execPre', function() {
       execed.second = true;
     });
 
-    hooks.execPre('cook', null, function(err) {
-      assert.ifError(err);
-      assert.equal(2, Object.keys(execed).length);
-      assert.ok(execed.first);
-      assert.ok(execed.second);
-      done();
-    });
+    await hooks.execPre('cook', null);
+    assert.equal(2, Object.keys(execed).length);
+    assert.ok(execed.first);
+    assert.ok(execed.second);
   });
 
-  it('allows passing arguments to the next pre', function(done) {
-    const execed = {};
-
-    hooks.pre('cook', function(next) {
-      execed.first = true;
-      next(null, 'test');
-    });
-
-    hooks.pre('cook', function(next, p) {
-      execed.second = true;
-      assert.equal(p, 'test');
-      next();
-    });
-
-    hooks.pre('cook', function(next, p) {
-      execed.third = true;
-      assert.ok(!p);
-      next();
-    });
-
-    hooks.execPre('cook', null, function(err) {
-      assert.ifError(err);
-      assert.equal(3, Object.keys(execed).length);
-      assert.ok(execed.first);
-      assert.ok(execed.second);
-      assert.ok(execed.third);
-      done();
-    });
-  });
-
-  it('avoids passing final callback to pre', function(done) {
-    const execed = {};
-
-    hooks.pre('cook', function(next) {
-      execed.first = true;
-      assert.equal(arguments.length, 1);
-      next(null, 'test');
-    });
-
-    hooks.pre('cook', function(next, p, _cb) {
-      execed.second = true;
-      assert.equal(p, 'test');
-      assert.equal(arguments.length, 2);
-      next();
-    });
-
-    hooks.pre('cook', function(next, p) {
-      execed.third = true;
-      assert.ok(!p);
-      assert.equal(arguments.length, 1);
-      next();
-    });
-
-    hooks.execPre('cook', null, [finalCb], function(err) {
-      assert.ifError(err);
-      assert.equal(3, Object.keys(execed).length);
-      assert.ok(execed.first);
-      assert.ok(execed.second);
-      assert.ok(execed.third);
-      done();
-    });
-
-    function finalCb() {}
-  });
-
-  it('handles sync errors in pre if there are more hooks', function(done) {
+  it('handles sync errors in pre if there are more hooks', async function() {
     const execed = {};
 
     hooks.pre('cook', function() {
@@ -336,15 +252,13 @@ describe('execPre', function() {
       execed.second = true;
     });
 
-    hooks.execPre('cook', null, function(err) {
-      assert.ok(err);
-      assert.ok(execed.first);
-      assert.equal(err.message, 'Oops!');
-      done();
-    });
+    const err = await hooks.execPre('cook', null).then(() => null, err => err);
+    assert.ok(err);
+    assert.ok(execed.first);
+    assert.equal(err.message, 'Oops!');
   });
 
-  it('supports skipWrappedFunction', function(done) {
+  it('supports skipWrappedFunction', async function() {
     const execed = {};
 
     hooks.pre('cook', function(callback) {
@@ -355,11 +269,9 @@ describe('execPre', function() {
       execed.second = true;
     });
 
-    hooks.execPre('cook', null, function(err) {
-      assert.ok(execed.second);
-      assert.ok(err instanceof Kareem.skipWrappedFunction);
-      done();
-    });
+    const err = await hooks.execPre('cook', null).then(() => null, err => err);
+    assert.ok(execed.second);
+    assert.ok(err instanceof Kareem.skipWrappedFunction);
   });
 });
 

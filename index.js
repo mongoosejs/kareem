@@ -32,57 +32,56 @@ Kareem.overwriteResult = function overwriteResult() {
  * @param {Function} [callback] The callback to call when executing all hooks are finished
  * @returns {void}
  */
-Kareem.prototype.execPre = function(name, context, args, callback) {
-  if (arguments.length === 3) {
-    callback = args;
-    args = [];
-  }
+Kareem.prototype.execPre = async function execPre(name, context, args) {
   const pres = this._pres.get(name) || [];
   const numPres = pres.length;
-  const numAsyncPres = pres.numAsync || 0;
-  let currentPre = 0;
-  let asyncPresLeft = numAsyncPres;
-  let done = false;
   const $args = args;
-  let shouldSkipWrappedFunction = null;
+  let skipWrappedFunction = null;
 
   if (!numPres) {
-    return nextTick(function() {
-      callback(null);
-    });
+    return;
   }
 
-  function next() {
-    if (currentPre >= numPres) {
-      return;
-    }
-    const pre = pres[currentPre];
-
+  const asyncPrePromises = [];
+  for (const pre of pres) {
     if (pre.isAsync) {
-      const args = [
-        decorateNextFn(_next),
-        decorateNextFn(function(error) {
-          if (error) {
-            if (done) {
-              return;
-            }
-            if (error instanceof Kareem.skipWrappedFunction) {
-              shouldSkipWrappedFunction = error;
-            } else {
-              done = true;
-              return callback(error);
-            }
-          }
-          if (--asyncPresLeft === 0 && currentPre >= numPres) {
-            return callback(shouldSkipWrappedFunction);
-          }
-        })
-      ];
-
-      callMiddlewareFunction(pre.fn, context, args, args[0]);
+      let nextResolve = null;
+      let nextReject = null;
+      const nextPromise = new Promise((resolve, reject) => {
+        nextResolve = resolve;
+        nextReject = reject;
+      });
+      let doneResolve = null;
+      let doneReject = null;
+      const donePromise = new Promise((resolve, reject) => {
+        doneResolve = resolve;
+        doneReject = reject;
+      });
+      const args = [(err) => err ? nextReject(err) : nextResolve(), (err) => err ? doneReject(err) : doneResolve()];
+      const maybePromiseLike = pre.fn.apply(context, args);
+      try {
+        if (isPromiseLike(maybePromiseLike)) {
+          await maybePromiseLike;
+        } else {
+          await nextPromise;
+        }
+      } catch (error) {
+        if (error instanceof Kareem.skipWrappedFunction) {
+          skipWrappedFunction = error;
+          continue;
+        }
+        throw error;
+      }
+      asyncPrePromises.push(donePromise);
     } else if (pre.fn.length > 0) {
-      const args = [decorateNextFn(_next)];
-      const _args = arguments.length >= 2 ? arguments : [null].concat($args);
+      let resolve = null;
+      let reject = null;
+      const cbPromise = new Promise((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+      const args = [(err) => err ? reject(err) : resolve()];
+      const _args = [null].concat($args);
       for (let i = 1; i < _args.length; ++i) {
         if (i === _args.length - 1 && typeof _args[i] === 'function') {
           continue; // skip callbacks to avoid accidentally calling the callback from a hook
@@ -90,60 +89,37 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
         args.push(_args[i]);
       }
 
-      callMiddlewareFunction(pre.fn, context, args, args[0]);
-    } else {
-      let maybePromiseLike = null;
       try {
-        maybePromiseLike = pre.fn.call(context);
-      } catch (err) {
-        if (err != null) {
-          return callback(err);
+        const maybePromiseLike = pre.fn.apply(context, args);
+        if (isPromiseLike(maybePromiseLike)) {
+          await maybePromiseLike;
+        } else {
+          await cbPromise;
         }
+      } catch (error) {
+        if (error instanceof Kareem.skipWrappedFunction) {
+          skipWrappedFunction = error;
+          continue;
+        }
+        throw error;
       }
-
-      if (isPromiseLike(maybePromiseLike)) {
-        maybePromiseLike.then(() => _next(), err => _next(err));
-      } else {
-        if (++currentPre >= numPres) {
-          if (asyncPresLeft > 0) {
-            // Leave parallel hooks to run
-            return;
-          } else {
-            return nextTick(function() {
-              callback(shouldSkipWrappedFunction);
-            });
-          }
+    } else {
+      try {
+        await pre.fn.call(context);
+      } catch (error) {
+        if (error instanceof Kareem.skipWrappedFunction) {
+          skipWrappedFunction = error;
+          continue;
         }
-        next();
+        throw error;
       }
     }
   }
 
-  next.apply(null, [null].concat(args));
+  await Promise.all(asyncPrePromises);
 
-  function _next(error) {
-    if (error) {
-      if (done) {
-        return;
-      }
-      if (error instanceof Kareem.skipWrappedFunction) {
-        shouldSkipWrappedFunction = error;
-      } else {
-        done = true;
-        return callback(error);
-      }
-    }
-
-    if (++currentPre >= numPres) {
-      if (asyncPresLeft > 0) {
-        // Leave parallel hooks to run
-        return;
-      } else {
-        return callback(shouldSkipWrappedFunction);
-      }
-    }
-
-    next.apply(context, arguments);
+  if (skipWrappedFunction) {
+    throw skipWrappedFunction;
   }
 };
 
@@ -365,7 +341,9 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
   options = options || {};
   const checkForPromise = options.checkForPromise;
 
-  this.execPre(name, context, args, function(error) {
+  this.execPre(name, context, args).then(() => onPreComplete(null), error => onPreComplete(error));
+
+  function onPreComplete(error) {
     if (error && !(error instanceof Kareem.skipWrappedFunction)) {
       const numCallbackParams = options.numCallbackParams || 0;
       const errorArgs = options.contextParameter ? [context] : [];
@@ -427,7 +405,7 @@ Kareem.prototype.wrap = function(name, fn, context, args, options) {
         });
       }
     }
-  });
+  }
 };
 
 /**

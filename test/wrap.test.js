@@ -348,6 +348,7 @@ describe('wrap()', function() {
     hooks.pre('cook', function pre(callback, arg) {
       execed.pre = true;
       assert.strictEqual(arg, 4);
+
       callback(Kareem.skipWrappedFunction(3));
     });
 

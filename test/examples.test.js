@@ -18,19 +18,14 @@ describe('pre hooks', function() {
     hooks = new Kareem();
   });
 
-  it('runs without any hooks specified', function(done) {
-    hooks.execPre('cook', null, function() {
-      // ...
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+  it('runs without any hooks specified', async function() {
+    await hooks.execPre('cook', null);
   });
 
   /* pre hook functions take one parameter, a "done" function that you execute
    * when your pre hook is finished.
    */
-  it('runs basic serial pre hooks', function(done) {
+  it('runs basic serial pre hooks', async function() {
     let count = 0;
 
     hooks.pre('cook', function(done) {
@@ -38,15 +33,11 @@ describe('pre hooks', function() {
       done();
     });
 
-    hooks.execPre('cook', null, function() {
-      assert.equal(1, count);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    await hooks.execPre('cook', null);
+    assert.equal(1, count);
   });
 
-  it('can run multipe pre hooks', function(done) {
+  it('can run multipe pre hooks', async function() {
     let count1 = 0;
     let count2 = 0;
 
@@ -60,19 +51,15 @@ describe('pre hooks', function() {
       done();
     });
 
-    hooks.execPre('cook', null, function() {
-      assert.equal(1, count1);
-      assert.equal(1, count2);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    await hooks.execPre('cook', null);
+    assert.equal(1, count1);
+    assert.equal(1, count2);
   });
 
   /* If your pre hook function takes no parameters, its assumed to be
    * fully synchronous.
    */
-  it('can run fully synchronous pre hooks', function(done) {
+  it('can run fully synchronous pre hooks', async function() {
     let count1 = 0;
     let count2 = 0;
 
@@ -84,19 +71,14 @@ describe('pre hooks', function() {
       ++count2;
     });
 
-    hooks.execPre('cook', null, function(error) {
-      assert.equal(null, error);
-      assert.equal(1, count1);
-      assert.equal(1, count2);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    await hooks.execPre('cook', null);
+    assert.equal(1, count1);
+    assert.equal(1, count2);
   });
 
   /* Pre save hook functions are bound to the second parameter to `execPre()`
    */
-  it('properly attaches context to pre hooks', function(done) {
+  it('properly attaches context to pre hooks', async function() {
     hooks.pre('cook', function(done) {
       this.bacon = 3;
       done();
@@ -110,14 +92,9 @@ describe('pre hooks', function() {
     const obj = { bacon: 0, eggs: 0 };
 
     // In the pre hooks, `this` will refer to `obj`
-    hooks.execPre('cook', obj, function(error) {
-      assert.equal(null, error);
-      assert.equal(3, obj.bacon);
-      assert.equal(4, obj.eggs);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    await hooks.execPre('cook', obj);
+    assert.equal(3, obj.bacon);
+    assert.equal(4, obj.eggs);
   });
 
   /* Like the hooks module, you can declare "async" pre hooks - these take two
@@ -125,7 +102,7 @@ describe('pre hooks', function() {
    * the next pre hook, but the underlying function won't be called until all
    * async pre hooks have called `done()`.
    */
-  it('can execute parallel (async) pre hooks', function(done) {
+  it('can execute parallel (async) pre hooks', async function() {
     hooks.pre('cook', true, function(next, done) {
       this.bacon = 3;
       next();
@@ -150,21 +127,17 @@ describe('pre hooks', function() {
 
     const obj = { bacon: 0, eggs: 0 };
 
-    hooks.execPre('cook', obj, function() {
-      assert.equal(3, obj.bacon);
-      assert.equal(4, obj.eggs);
-      assert.equal(false, obj.waffles);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    await hooks.execPre('cook', obj);
+    assert.equal(3, obj.bacon);
+    assert.equal(4, obj.eggs);
+    assert.equal(false, obj.waffles);
   });
 
   /* You can also return a promise from your pre hooks instead of calling
    * `next()`. When the returned promise resolves, kareem will kick off the
    * next middleware.
    */
-  it('supports returning a promise', function(done) {
+  it('supports returning a promise', async function() {
     hooks.pre('cook', function() {
       return new Promise(resolve => {
         setTimeout(() => {
@@ -176,12 +149,8 @@ describe('pre hooks', function() {
 
     const obj = { bacon: 0 };
 
-    hooks.execPre('cook', obj, function() {
-      assert.equal(3, obj.bacon);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    await hooks.execPre('cook', obj);
+    assert.equal(3, obj.bacon);
   });
 });
 
