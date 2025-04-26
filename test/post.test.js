@@ -11,16 +11,15 @@ describe('execPost', function() {
     hooks = new Kareem();
   });
 
-  it('handles errors', function(done) {
+  it('handles errors', async function() {
     hooks.post('cook', function(eggs, callback) {
       callback('error!');
     });
 
-    hooks.execPost('cook', null, [4], function(error, eggs) {
-      assert.equal('error!', error);
-      assert.ok(!eggs);
-      done();
-    });
+    await assert.rejects(
+      () => hooks.execPost('cook', null, [4]),
+      error => error === 'error!'
+    );
   });
 
   it('unshift', function() {
@@ -45,7 +44,7 @@ describe('execPost', function() {
     assert.throws(() => hooks.post('test'), /got "undefined"/);
   });
 
-  it('multiple posts', function(done) {
+  it('multiple posts', async function() {
     hooks.post('cook', function(eggs, callback) {
       setTimeout(
         function() {
@@ -62,14 +61,11 @@ describe('execPost', function() {
         5);
     });
 
-    hooks.execPost('cook', null, [4], function(error, eggs) {
-      assert.ifError(error);
-      assert.equal(4, eggs);
-      done();
-    });
+    const eggs = await hooks.execPost('cook', null, [4]);
+    assert.equal(eggs, 4);
   });
 
-  it('error posts', function(done) {
+  it('error posts', async function() {
     const called = {};
     hooks.post('cook', function(eggs, callback) {
       called.first = true;
@@ -97,20 +93,23 @@ describe('execPost', function() {
       callback(new Error('fifth'));
     });
 
-    hooks.execPost('cook', null, [4], function(error) {
-      assert.ok(error);
-      assert.equal(error.message, 'fifth');
-      assert.deepEqual(called, {
-        first: true,
-        second: true,
-        fourth: true,
-        fifth: true
-      });
-      done();
-    });
+    await assert.rejects(
+      () => hooks.execPost('cook', null, [4]),
+      error => {
+        assert.ok(error);
+        assert.equal(error.message, 'fifth');
+        assert.deepEqual(called, {
+          first: true,
+          second: true,
+          fourth: true,
+          fifth: true
+        });
+        return true;
+      }
+    );
   });
 
-  it('error posts with errorHandler option', function(done) {
+  it('error posts with errorHandler option', async function() {
     const called = {};
     hooks.post('cook', function(eggs, callback) {
       called.first = true;
@@ -131,18 +130,21 @@ describe('execPost', function() {
       return Promise.resolve();
     });
 
-    hooks.execPost('cook', null, [4], function(error) {
-      assert.ok(error);
-      assert.deepEqual(called, {
-        first: true,
-        second: true,
-        fourth: true
-      });
-      done();
-    });
+    await assert.rejects(
+      () => hooks.execPost('cook', null, [4]),
+      error => {
+        assert.ok(error);
+        assert.deepEqual(called, {
+          first: true,
+          second: true,
+          fourth: true
+        });
+        return true;
+      }
+    );
   });
 
-  it('error posts with initial error', function(done) {
+  it('error posts with initial error', async function() {
     const called = {};
 
     hooks.post('cook', function() {
@@ -168,19 +170,22 @@ describe('execPost', function() {
     });
 
     const options = { error: new Error('fail') };
-    hooks.execPost('cook', null, [4], options, function(error) {
-      assert.ok(error);
-      assert.equal(error.message, 'third');
-      assert.deepEqual(called, {
-        second: true,
-        third: true,
-        fourth: true
-      });
-      done();
-    });
+    await assert.rejects(
+      () => hooks.execPost('cook', null, [4], options),
+      error => {
+        assert.ok(error);
+        assert.equal(error.message, 'third');
+        assert.deepEqual(called, {
+          second: true,
+          third: true,
+          fourth: true
+        });
+        return true;
+      }
+    );
   });
 
-  it('supports returning a promise', function(done) {
+  it('supports returning a promise', async function() {
     let calledPost = 0;
 
     hooks.post('cook', function() {
@@ -192,14 +197,11 @@ describe('execPost', function() {
       });
     });
 
-    hooks.execPost('cook', null, [], {}, function(error) {
-      assert.ifError(error);
-      assert.equal(calledPost, 1);
-      done();
-    });
+    await hooks.execPost('cook', null, [], {});
+    assert.equal(calledPost, 1);
   });
 
-  it('supports overwriteResult', function(done) {
+  it('supports overwriteResult', async function() {
     hooks.post('cook', function(eggs, callback) {
       callback(Kareem.overwriteResult(5));
     });
@@ -210,13 +212,11 @@ describe('execPost', function() {
     });
 
     const options = {};
-    hooks.execPost('cook', null, [4], options, function(error, eggs) {
-      assert.equal(eggs, 5);
-      done();
-    });
+    const eggs = await hooks.execPost('cook', null, [4], options);
+    assert.equal(eggs, 5);
   });
 
-  it('supports sync returning overwriteResult', function(done) {
+  it('supports sync returning overwriteResult', async function() {
     hooks.post('cook', function() {
       return Kareem.overwriteResult(5);
     });
@@ -227,11 +227,8 @@ describe('execPost', function() {
     });
 
     const options = {};
-    hooks.execPost('cook', null, [4], options, function(error, eggs) {
-      assert.ifError(error);
-      assert.equal(eggs, 5);
-      done();
-    });
+    const eggs = await hooks.execPost('cook', null, [4], options);
+    assert.equal(eggs, 5);
   });
 
   it('supports sync overwriteResult', function() {
@@ -248,7 +245,7 @@ describe('execPost', function() {
     assert.deepEqual(res, [5]);
   });
 
-  it('supports overwriteResult with promises', function(done) {
+  it('supports overwriteResult with promises', async function() {
     hooks.post('cook', function() {
       return Promise.resolve(Kareem.overwriteResult(5));
     });
@@ -258,10 +255,8 @@ describe('execPost', function() {
     });
 
     const options = {};
-    hooks.execPost('cook', null, [4], options, function(error, eggs) {
-      assert.equal(eggs, 5);
-      done();
-    });
+    const eggs = await hooks.execPost('cook', null, [4], options);
+    assert.equal(eggs, 5);
   });
 });
 

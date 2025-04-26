@@ -161,65 +161,52 @@ describe('post hooks', function() {
     hooks = new Kareem();
   });
 
-  it('runs without any hooks specified', function(done) {
-    hooks.execPost('cook', null, [1], function(error, eggs) {
-      assert.ifError(error);
-      assert.equal(1, eggs);
-      done();
-    });
+  it('runs without any hooks specified', async function() {
+    const [eggs] = await hooks.execPost('cook', null, [1]);
+    assert.equal(eggs, 1);
   });
 
-  it('executes with parameters passed in', function(done) {
+  it('executes with parameters passed in', async function() {
     hooks.post('cook', function(eggs, bacon, callback) {
-      assert.equal(1, eggs);
-      assert.equal(2, bacon);
+      assert.equal(eggs, 1);
+      assert.equal(bacon, 2);
       callback();
     });
 
-    hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
-      assert.ifError(error);
-      assert.equal(1, eggs);
-      assert.equal(2, bacon);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    const [eggs, bacon] = await hooks.execPost('cook', null, [1, 2]);
+    assert.equal(eggs, 1);
+    assert.equal(bacon, 2);
   });
 
-  it('can use synchronous post hooks', function(done) {
+  it('can use synchronous post hooks', async function() {
     const execed = {};
 
     hooks.post('cook', function(eggs, bacon) {
       execed.first = true;
-      assert.equal(1, eggs);
-      assert.equal(2, bacon);
+      assert.equal(eggs, 1);
+      assert.equal(bacon, 2);
     });
 
     hooks.post('cook', function(eggs, bacon, callback) {
       execed.second = true;
-      assert.equal(1, eggs);
-      assert.equal(2, bacon);
+      assert.equal(eggs, 1);
+      assert.equal(bacon, 2);
       callback();
     });
 
-    hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
-      assert.ifError(error);
-      assert.equal(2, Object.keys(execed).length);
-      assert.ok(execed.first);
-      assert.ok(execed.second);
-      assert.equal(1, eggs);
-      assert.equal(2, bacon);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    const [eggs, bacon] = await hooks.execPost('cook', null, [1, 2]);
+    assert.equal(Object.keys(execed).length, 2);
+    assert.ok(execed.first);
+    assert.ok(execed.second);
+    assert.equal(eggs, 1);
+    assert.equal(bacon, 2);
   });
 
   /* You can also return a promise from your post hooks instead of calling
    * `next()`. When the returned promise resolves, kareem will kick off the
    * next middleware.
    */
-  it('supports returning a promise', function(done) {
+  it('supports returning a promise', async function() {
     hooks.post('cook', function() {
       return new Promise(resolve => {
         setTimeout(() => {
@@ -231,12 +218,8 @@ describe('post hooks', function() {
 
     const obj = { bacon: 0 };
 
-    hooks.execPost('cook', obj, obj, function() {
-      assert.equal(obj.bacon, 3);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    await hooks.execPost('cook', obj, [obj]);
+    assert.equal(obj.bacon, 3);
   });
 });
 
