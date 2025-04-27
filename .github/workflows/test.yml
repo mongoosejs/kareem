@@ -11,8 +11,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [12, 14, 16, 18]
-        os: [ubuntu-20.04]
+        node: [12, 14, 16, 18, 20, 22]
+        os: [ubuntu-24.04]
     name: Node ${{ matrix.node }}
     steps:
       - uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846 # v3
@@ -31,8 +31,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [18]
-        os: [ubuntu-20.04]
+        node: [22]
+        os: [ubuntu-24.04]
     name: Lint
     steps:
       - uses: actions/checkout@a12a3943b4bdde767164f792f33f40b04645d846 # v3
