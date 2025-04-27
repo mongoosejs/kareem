@@ -19,15 +19,13 @@ if (untilIndex <= 0) {
 
 let mdOutput = existingReadme.substring(0, untilIndex + searchRegion.length) + '\n\n# API\n\n';
 
-for (let i = 0; i < blocks.length; ++i) {
-  const describe = blocks[i];
+for (const describe of blocks) {
   mdOutput += '## ' + describe.contents + '\n\n';
   mdOutput += describe.comments[0] ?
     acquit.trimEachLine(describe.comments[0]) + '\n\n' :
     '';
 
-  for (let j = 0; j < describe.blocks.length; ++j) {
-    const it = describe.blocks[j];
+  for (const it of describe.blocks) {
     mdOutput += '#### It ' + it.contents + '\n\n';
     mdOutput += it.comments[0] ?
       acquit.trimEachLine(it.comments[0]) + '\n\n' :
