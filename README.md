@@ -183,8 +183,6 @@ hooks.execPre('cook', obj, function() {
 
 ## post hooks
 
-acquit:ignore:end
-
 ### It runs without any hooks specified
 
 ```javascript
@@ -263,8 +261,6 @@ hooks.execPost('cook', obj, obj, function() {
 ```
 
 ## wrap()
-
-acquit:ignore:end
 
 ### It wraps pre and post calls into one call
 
@@ -378,8 +374,6 @@ cook(obj, function(error, result) {
 ```
 
 ## clone()
-
-acquit:ignore:end
 
 ### It clones a Kareem object
 
