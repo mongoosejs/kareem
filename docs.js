@@ -17,23 +17,32 @@ if (untilIndex <= 0) {
   throw new Error('Region ' + JSON.stringify(searchRegion) + ' not found!');
 }
 
-let mdOutput = existingReadme.substring(0, untilIndex + searchRegion.length) + '\n\n# API\n\n';
+let mdOutput = existingReadme.substring(0, untilIndex + searchRegion.length) + '\n\n# API';
 
 for (const describe of blocks) {
-  mdOutput += '## ' + describe.contents + '\n\n';
-  mdOutput += describe.comments[0] ?
-    acquit.trimEachLine(describe.comments[0]) + '\n\n' :
-    '';
+  mdOutput += '\n\n';
+  mdOutput += '## ' + describe.contents;
+  // only add spacing and comments, if there are comments
+  if (describe.comments[0]) {
+    mdOutput += '\n\n';
+    // acquit "trimEachLine" does not actually trim the last line for some reason
+    mdOutput += acquit.trimEachLine(describe.comments[0]).trim();
+  }
 
   for (const it of describe.blocks) {
+    mdOutput += '\n\n';
     mdOutput += '#### It ' + it.contents + '\n\n';
-    mdOutput += it.comments[0] ?
-      acquit.trimEachLine(it.comments[0]) + '\n\n' :
-      '';
+
+    if (it.comments[0]) {
+      mdOutput += acquit.trimEachLine(it.comments[0]) + '\n';
+    }
+
     mdOutput += '```javascript\n';
     mdOutput += it.code + '\n';
-    mdOutput += '```\n\n';
+    mdOutput += '```';
   }
 }
+
+mdOutput += '\n';
 
 fs.writeFileSync('README.md', mdOutput);

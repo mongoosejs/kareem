@@ -22,7 +22,6 @@ object, rather than relying on inheritance. Furthermore, kareem exposes
 an `execPre()` function that allows you to execute your pre hooks when
 appropriate, giving you more fine-grained control over your function hooks.
 
-
 #### It runs without any hooks specified
 
 ```javascript
@@ -35,7 +34,6 @@ hooks.execPre('cook', null, function() {
 
 pre hook functions take one parameter, a "done" function that you execute
 when your pre hook is finished.
-
 
 ```javascript
 let count = 0;
@@ -77,7 +75,6 @@ hooks.execPre('cook', null, function() {
 If your pre hook function takes no parameters, its assumed to be
 fully synchronous.
 
-
 ```javascript
 let count1 = 0;
 let count2 = 0;
@@ -100,7 +97,6 @@ hooks.execPre('cook', null, function(error) {
 #### It properly attaches context to pre hooks
 
 Pre save hook functions are bound to the second parameter to `execPre()`
-
 
 ```javascript
 hooks.pre('cook', function(done) {
@@ -129,7 +125,6 @@ Like the hooks module, you can declare "async" pre hooks - these take two
 parameters, the functions `next()` and `done()`. `next()` passes control to
 the next pre hook, but the underlying function won't be called until all
 async pre hooks have called `done()`.
-
 
 ```javascript
 hooks.pre('cook', true, function(next, done) {
@@ -168,7 +163,6 @@ hooks.execPre('cook', obj, function() {
 You can also return a promise from your pre hooks instead of calling
 `next()`. When the returned promise resolves, kareem will kick off the
 next middleware.
-
 
 ```javascript
 hooks.pre('cook', function() {
@@ -250,7 +244,6 @@ hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
 You can also return a promise from your post hooks instead of calling
 `next()`. When the returned promise resolves, kareem will kick off the
 next middleware.
-
 
 ```javascript
 hooks.post('cook', function() {
@@ -419,4 +412,3 @@ assert.equal(k3._pres.get('cook')[0].fn, test2);
 assert.equal(k3._pres.get('cook')[1].fn, test1);
 assert.equal(k3._posts.get('cook').length, 1);
 ```
-
