@@ -9,6 +9,8 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
 
 <img src="http://upload.wikimedia.org/wikipedia/commons/0/00/Kareem-Abdul-Jabbar_Lipofsky.jpg" width="220">
 
+<!--DOCS START-->
+
 # API
 
 ## pre hooks
@@ -36,7 +38,7 @@ when your pre hook is finished.
 
 
 ```javascript
-var count = 0;
+let count = 0;
 
 hooks.pre('cook', function(done) {
   ++count;
@@ -51,8 +53,8 @@ hooks.execPre('cook', null, function() {
 #### It can run multipe pre hooks
 
 ```javascript
-var count1 = 0;
-var count2 = 0;
+let count1 = 0;
+let count2 = 0;
 
 hooks.pre('cook', function(done) {
   ++count1;
@@ -77,8 +79,8 @@ fully synchronous.
 
 
 ```javascript
-var count1 = 0;
-var count2 = 0;
+let count1 = 0;
+let count2 = 0;
 
 hooks.pre('cook', function() {
   ++count1;
@@ -111,7 +113,7 @@ hooks.pre('cook', function(done) {
   done();
 });
 
-var obj = { bacon: 0, eggs: 0 };
+const obj = { bacon: 0, eggs: 0 };
 
 // In the pre hooks, `this` will refer to `obj`
 hooks.execPre('cook', obj, function(error) {
@@ -140,7 +142,7 @@ hooks.pre('cook', true, function(next, done) {
 
 hooks.pre('cook', true, function(next, done) {
   next();
-  var _this = this;
+  const _this = this;
   setTimeout(function() {
     _this.eggs = 4;
     done();
@@ -152,7 +154,7 @@ hooks.pre('cook', function(next) {
   next();
 });
 
-var obj = { bacon: 0, eggs: 0 };
+const obj = { bacon: 0, eggs: 0 };
 
 hooks.execPre('cook', obj, function() {
   assert.equal(3, obj.bacon);
@@ -178,7 +180,7 @@ hooks.pre('cook', function() {
   });
 });
 
-var obj = { bacon: 0 };
+const obj = { bacon: 0 };
 
 hooks.execPre('cook', obj, function() {
   assert.equal(3, obj.bacon);
@@ -218,7 +220,7 @@ hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
 #### It can use synchronous post hooks
 
 ```javascript
-var execed = {};
+const execed = {};
 
 hooks.post('cook', function(eggs, bacon) {
   execed.first = true;
@@ -251,7 +253,7 @@ next middleware.
 
 
 ```javascript
-hooks.post('cook', function(bacon) {
+hooks.post('cook', function() {
   return new Promise(resolve => {
     setTimeout(() => {
       this.bacon = 3;
@@ -260,7 +262,7 @@ hooks.post('cook', function(bacon) {
   });
 });
 
-var obj = { bacon: 0 };
+const obj = { bacon: 0 };
 
 hooks.execPost('cook', obj, obj, function() {
   assert.equal(obj.bacon, 3);
@@ -284,7 +286,7 @@ hooks.pre('cook', true, function(next, done) {
 
 hooks.pre('cook', true, function(next, done) {
   next();
-  var _this = this;
+  const _this = this;
   setTimeout(function() {
     _this.eggs = 4;
     done();
@@ -300,9 +302,9 @@ hooks.post('cook', function(obj) {
   obj.tofu = 'no';
 });
 
-var obj = { bacon: 0, eggs: 0 };
+const obj = { bacon: 0, eggs: 0 };
 
-var args = [obj];
+const args = [obj];
 args.push(function(error, result) {
   assert.ifError(error);
   assert.equal(null, error);
@@ -342,7 +344,7 @@ hooks.pre('cook', true, function(next, done) {
 
 hooks.pre('cook', true, function(next, done) {
   next();
-  var _this = this;
+  const _this = this;
   setTimeout(function() {
     _this.eggs = 4;
     done();
@@ -358,9 +360,9 @@ hooks.post('cook', function(obj) {
   obj.tofu = 'no';
 });
 
-var obj = { bacon: 0, eggs: 0 };
+const obj = { bacon: 0, eggs: 0 };
 
-var cook = hooks.createWrapper(
+const cook = hooks.createWrapper(
   'cook',
   function(o, callback) {
     assert.equal(3, obj.bacon);
@@ -389,11 +391,11 @@ acquit:ignore:end
 #### It clones a Kareem object
 
 ```javascript
-var k1 = new Kareem();
+const k1 = new Kareem();
 k1.pre('cook', function() {});
 k1.post('cook', function() {});
 
-var k2 = k1.clone();
+const k2 = k1.clone();
 assert.deepEqual(Array.from(k2._pres.keys()), ['cook']);
 assert.deepEqual(Array.from(k2._posts.keys()), ['cook']);
 ```
@@ -403,17 +405,18 @@ assert.deepEqual(Array.from(k2._posts.keys()), ['cook']);
 #### It pulls hooks from another Kareem object
 
 ```javascript
-var k1 = new Kareem();
-var test1 = function() {};
+const k1 = new Kareem();
+const test1 = function() {};
 k1.pre('cook', test1);
 k1.post('cook', function() {});
 
-var k2 = new Kareem();
-var test2 = function() {};
+const k2 = new Kareem();
+const test2 = function() {};
 k2.pre('cook', test2);
-var k3 = k2.merge(k1);
+const k3 = k2.merge(k1);
 assert.equal(k3._pres.get('cook').length, 2);
 assert.equal(k3._pres.get('cook')[0].fn, test2);
 assert.equal(k3._pres.get('cook')[1].fn, test1);
 assert.equal(k3._posts.get('cook').length, 1);
 ```
+
