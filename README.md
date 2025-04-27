@@ -22,7 +22,7 @@ object, rather than relying on inheritance. Furthermore, kareem exposes
 an `execPre()` function that allows you to execute your pre hooks when
 appropriate, giving you more fine-grained control over your function hooks.
 
-#### It runs without any hooks specified
+### It runs without any hooks specified
 
 ```javascript
 hooks.execPre('cook', null, function() {
@@ -30,7 +30,7 @@ hooks.execPre('cook', null, function() {
 });
 ```
 
-#### It runs basic serial pre hooks
+### It runs basic serial pre hooks
 
 pre hook functions take one parameter, a "done" function that you execute
 when your pre hook is finished.
@@ -48,7 +48,7 @@ hooks.execPre('cook', null, function() {
 });
 ```
 
-#### It can run multipe pre hooks
+### It can run multipe pre hooks
 
 ```javascript
 let count1 = 0;
@@ -70,7 +70,7 @@ hooks.execPre('cook', null, function() {
 });
 ```
 
-#### It can run fully synchronous pre hooks
+### It can run fully synchronous pre hooks
 
 If your pre hook function takes no parameters, its assumed to be
 fully synchronous.
@@ -94,7 +94,7 @@ hooks.execPre('cook', null, function(error) {
 });
 ```
 
-#### It properly attaches context to pre hooks
+### It properly attaches context to pre hooks
 
 Pre save hook functions are bound to the second parameter to `execPre()`
 
@@ -119,7 +119,7 @@ hooks.execPre('cook', obj, function(error) {
 });
 ```
 
-#### It can execute parallel (async) pre hooks
+### It can execute parallel (async) pre hooks
 
 Like the hooks module, you can declare "async" pre hooks - these take two
 parameters, the functions `next()` and `done()`. `next()` passes control to
@@ -158,7 +158,7 @@ hooks.execPre('cook', obj, function() {
 });
 ```
 
-#### It supports returning a promise
+### It supports returning a promise
 
 You can also return a promise from your pre hooks instead of calling
 `next()`. When the returned promise resolves, kareem will kick off the
@@ -185,7 +185,7 @@ hooks.execPre('cook', obj, function() {
 
 acquit:ignore:end
 
-#### It runs without any hooks specified
+### It runs without any hooks specified
 
 ```javascript
 hooks.execPost('cook', null, [1], function(error, eggs) {
@@ -195,7 +195,7 @@ hooks.execPost('cook', null, [1], function(error, eggs) {
 });
 ```
 
-#### It executes with parameters passed in
+### It executes with parameters passed in
 
 ```javascript
 hooks.post('cook', function(eggs, bacon, callback) {
@@ -211,7 +211,7 @@ hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
 });
 ```
 
-#### It can use synchronous post hooks
+### It can use synchronous post hooks
 
 ```javascript
 const execed = {};
@@ -239,7 +239,7 @@ hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
 });
 ```
 
-#### It supports returning a promise
+### It supports returning a promise
 
 You can also return a promise from your post hooks instead of calling
 `next()`. When the returned promise resolves, kareem will kick off the
@@ -266,7 +266,7 @@ hooks.execPost('cook', obj, obj, function() {
 
 acquit:ignore:end
 
-#### It wraps pre and post calls into one call
+### It wraps pre and post calls into one call
 
 ```javascript
 hooks.pre('cook', true, function(next, done) {
@@ -324,7 +324,7 @@ hooks.wrap(
 
 ## createWrapper()
 
-#### It wraps wrap() into a callable function
+### It wraps wrap() into a callable function
 
 ```javascript
 hooks.pre('cook', true, function(next, done) {
@@ -381,7 +381,7 @@ cook(obj, function(error, result) {
 
 acquit:ignore:end
 
-#### It clones a Kareem object
+### It clones a Kareem object
 
 ```javascript
 const k1 = new Kareem();
@@ -395,7 +395,7 @@ assert.deepEqual(Array.from(k2._posts.keys()), ['cook']);
 
 ## merge()
 
-#### It pulls hooks from another Kareem object
+### It pulls hooks from another Kareem object
 
 ```javascript
 const k1 = new Kareem();

@@ -31,7 +31,7 @@ for (const describe of blocks) {
 
   for (const it of describe.blocks) {
     mdOutput += '\n\n';
-    mdOutput += '#### It ' + it.contents + '\n\n';
+    mdOutput += '### It ' + it.contents + '\n\n';
 
     if (it.comments[0]) {
       mdOutput += acquit.trimEachLine(it.comments[0]) + '\n';
