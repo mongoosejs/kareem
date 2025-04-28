@@ -230,7 +230,7 @@ describe('wrap()', function() {
     hooks = new Kareem();
   });
 
-  it('wraps pre and post calls into one call', function(done) {
+  it('wraps pre and post calls into one call', async function() {
     hooks.pre('cook', true, function(next, done) {
       this.bacon = 3;
       next();
@@ -260,31 +260,24 @@ describe('wrap()', function() {
     const obj = { bacon: 0, eggs: 0 };
 
     const args = [obj];
-    args.push(function(error, result) {
-      assert.ifError(error);
-      assert.equal(null, error);
-      assert.equal(3, obj.bacon);
-      assert.equal(4, obj.eggs);
-      assert.equal(false, obj.waffles);
-      assert.equal('no', obj.tofu);
 
-      assert.equal(obj, result);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
-
-    hooks.wrap(
+    const result = await hooks.wrap(
       'cook',
-      function(o, callback) {
-        assert.equal(3, obj.bacon);
-        assert.equal(4, obj.eggs);
-        assert.equal(false, obj.waffles);
-        assert.equal(undefined, obj.tofu);
-        callback(null, o);
+      function(o) {
+        assert.equal(obj.bacon, 3);
+        assert.equal(obj.eggs, 4);
+        assert.equal(obj.waffles, false);
+        assert.equal(obj.tofu, undefined);
+        return o;
       },
       obj,
       args);
+
+    assert.equal(obj.bacon, 3);
+    assert.equal(obj.eggs, 4);
+    assert.equal(obj.waffles, false);
+    assert.equal(obj.tofu, 'no');
+    assert.equal(result, obj);
   });
 });
 
@@ -295,7 +288,7 @@ describe('createWrapper()', function() {
     hooks = new Kareem();
   });
 
-  it('wraps wrap() into a callable function', function(done) {
+  it('wraps wrap() into a callable function', async function() {
     hooks.pre('cook', true, function(next, done) {
       this.bacon = 3;
       next();
@@ -326,27 +319,22 @@ describe('createWrapper()', function() {
 
     const cook = hooks.createWrapper(
       'cook',
-      function(o, callback) {
+      function(o) {
         assert.equal(3, obj.bacon);
         assert.equal(4, obj.eggs);
         assert.equal(false, obj.waffles);
         assert.equal(undefined, obj.tofu);
-        callback(null, o);
+        return o;
       },
       obj);
 
-    cook(obj, function(error, result) {
-      assert.ifError(error);
-      assert.equal(3, obj.bacon);
-      assert.equal(4, obj.eggs);
-      assert.equal(false, obj.waffles);
-      assert.equal('no', obj.tofu);
+    const result = await cook(obj);
+    assert.equal(obj.bacon, 3);
+    assert.equal(obj.eggs, 4);
+    assert.equal(obj.waffles, false);
+    assert.equal(obj.tofu, 'no');
 
-      assert.equal(obj, result);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    assert.equal(result, obj);
   });
 });
 

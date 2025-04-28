@@ -166,12 +166,19 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
   for (const currentPost of posts) {
     const post = currentPost.fn;
     let numArgs = 0;
-    const argLength = args.length;
     const newArgs = [];
+    const argLength = args.length;
     for (let i = 0; i < argLength; ++i) {
-      numArgs += args[i] && args[i]._kareemIgnore ? 0 : 1;
       if (!args[i] || !args[i]._kareemIgnore) {
+        numArgs += 1;
         newArgs.push(args[i]);
+      }
+    }
+    // If numCallbackParams set, fill in the rest with null to enforce consistent number of args
+    if (options?.numCallbackParams != null) {
+      numArgs = options.numCallbackParams;
+      for (let i = newArgs.length; i < numArgs; ++i) {
+        newArgs.push(null);
       }
     }
 
@@ -195,7 +202,8 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
           const res = post.apply(context, [firstError].concat(newArgs));
           if (isPromiseLike(res)) {
             await res;
-          } else {
+          } else if (post.length === numArgs + 2) {
+            // `numArgs + 2` because we added the error and the callback
             await cbPromise;
           }
         } catch (error) {
@@ -286,101 +294,36 @@ Kareem.prototype.createWrapperSync = function(name, fn) {
   };
 };
 
-function _handleWrapError(instance, error, name, context, args, options, callback) {
-  if (options.useErrorHandlers) {
-    return instance.execPost(name, context, args, { error: error }).then(
-      () => typeof callback === 'function' && callback(),
-      error => typeof callback === 'function' && callback(error)
-    );
-  } else {
-    return typeof callback === 'function' && callback(error);
-  }
-}
-
 /**
  * Executes pre hooks, followed by the wrapped function, followed by post hooks.
  * @param {String} name The name of the hook
  * @param {Function} fn The function for the hook
  * @param {*} context Overwrite the "this" for the hook
  * @param {Array} args Apply custom arguments to the hook
- * @param {Object} [options]
- * @param {Boolean} [options.checkForPromise]
+ * @param {Object} options Additional options for the hook
  * @returns {void}
  */
-Kareem.prototype.wrap = function(name, fn, context, args, options) {
-  const lastArg = (args.length > 0 ? args[args.length - 1] : null);
-  const argsWithoutCb = Array.from(args);
-  typeof lastArg === 'function' && argsWithoutCb.pop();
-  const _this = this;
-
-  options = options || {};
-  const checkForPromise = options.checkForPromise;
-
-  this.execPre(name, context, args).then(() => onPreComplete(null), error => onPreComplete(error));
-
-  function onPreComplete(error) {
-    if (error && !(error instanceof Kareem.skipWrappedFunction)) {
-      const numCallbackParams = options.numCallbackParams || 0;
-      const errorArgs = options.contextParameter ? [context] : [];
-      for (let i = errorArgs.length; i < numCallbackParams; ++i) {
-        errorArgs.push(null);
-      }
-      return _handleWrapError(_this, error, name, context, errorArgs,
-        options, lastArg);
-    }
-
-    const numParameters = fn.length;
-    let ret;
-
+Kareem.prototype.wrap = async function wrap(name, fn, context, args, options) {
+  let ret;
+  let skipWrappedFunction = false;
+  try {
+    await this.execPre(name, context, args);
+  } catch (error) {
     if (error instanceof Kareem.skipWrappedFunction) {
-      ret = error.args[0];
-      return _cb(null, ...error.args);
+      ret = error.args;
+      skipWrappedFunction = true;
     } else {
-      try {
-        ret = fn.apply(context, argsWithoutCb.concat(_cb));
-      } catch (err) {
-        return _cb(err);
-      }
-    }
-
-    if (checkForPromise) {
-      if (isPromiseLike(ret)) {
-        // Thenable, use it
-        return ret.then(
-          res => _cb(null, res),
-          err => _cb(err)
-        );
-      }
-
-      // If `fn()` doesn't have a callback argument and doesn't return a
-      // promise, assume it is sync
-      if (numParameters < argsWithoutCb.length + 1) {
-        return _cb(null, ret);
-      }
-    }
-
-    function _cb() {
-      const argsWithoutError = Array.from(arguments);
-      argsWithoutError.shift();
-      if (options.nullResultByDefault && argsWithoutError.length === 0) {
-        argsWithoutError.push(null);
-      }
-      if (arguments[0]) {
-        // Assume error
-        return _handleWrapError(_this, arguments[0], name, context,
-          argsWithoutError, options, lastArg);
-      } else {
-        _this.execPost(name, context, argsWithoutError).then(
-          (res) => {
-            lastArg && lastArg.apply(context, [null, ...res]);
-          },
-          error => {
-            lastArg && lastArg.call(context, error);
-          }
-        );
-      }
+      await this.execPost(name, context, args, { ...options, error });
     }
   }
+
+  if (!skipWrappedFunction) {
+    ret = await fn.apply(context, args);
+  }
+
+  ret = await this.execPost(name, context, [ret], options);
+
+  return ret[0];
 };
 
 /**
@@ -444,15 +387,12 @@ Kareem.prototype.hasHooks = function(name) {
 Kareem.prototype.createWrapper = function(name, fn, context, options) {
   const _this = this;
   if (!this.hasHooks(name)) {
-    // Fast path: if there's no hooks for this function, just return the
-    // function wrapped in a nextTick()
-    return function() {
-      nextTick(() => fn.apply(this, arguments));
-    };
+    // Fast path: if there's no hooks for this function, just return the function
+    return fn;
   }
-  return function() {
+  return function kareemWrappedFunction() {
     const _context = context || this;
-    _this.wrap(name, fn, _context, Array.from(arguments), options);
+    return _this.wrap(name, fn, _context, Array.from(arguments), options);
   };
 };
 
@@ -500,6 +440,7 @@ Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
  * Register a new hook for "post"
  * @param {String} name The name of the hook
  * @param {Object} [options]
+ * @param {Boolean} [options.errorHandler] Whether this is an error handler
  * @param {Function} fn The function to register for "name"
  * @param {Boolean} [unshift] Wheter to "push" or to "unshift" the new hook
  * @returns {Kareem}
@@ -524,6 +465,24 @@ Kareem.prototype.post = function(name, options, fn, unshift) {
   }
   this._posts.set(name, posts);
   return this;
+};
+
+/**
+ * Register a new error handler for "name"
+ * @param {String} name The name of the hook
+ * @param {Object} [options]
+ * @param {Function} fn The function to register for "name"
+ * @param {Boolean} [unshift] Wheter to "push" or to "unshift" the new hook
+ * @returns {Kareem}
+ */
+
+Kareem.prototype.postError = function postError(name, options, fn, unshift) {
+  if (typeof options === 'function') {
+    unshift = !!fn;
+    fn = options;
+    options = {};
+  }
+  return this.post(name, { ...options, errorHandler: true }, fn, unshift);
 };
 
 /**
@@ -575,41 +534,9 @@ Kareem.prototype.merge = function(other, clone) {
   return ret;
 };
 
-function callMiddlewareFunction(fn, context, args, next) {
-  let maybePromiseLike;
-  try {
-    maybePromiseLike = fn.apply(context, args);
-  } catch (error) {
-    return next(error);
-  }
-
-  if (isPromiseLike(maybePromiseLike)) {
-    maybePromiseLike.then(() => next(), err => next(err));
-  }
-}
-
 function isPromiseLike(v) {
   return (typeof v === 'object' && v !== null && typeof v.then === 'function');
 }
-
-function decorateNextFn(fn) {
-  let called = false;
-  const _this = this;
-  return function() {
-    // Ensure this function can only be called once
-    if (called) {
-      return;
-    }
-    called = true;
-    // Make sure to clear the stack so try/catch doesn't catch errors
-    // in subsequent middleware
-    return nextTick(() => fn.apply(_this, arguments));
-  };
-}
-
-const nextTick = typeof process === 'object' && process !== null && process.nextTick || function nextTick(cb) {
-  setTimeout(cb, 0);
-};
 
 function isErrorHandlingMiddleware(post, numArgs) {
   if (post.errorHandler) {
