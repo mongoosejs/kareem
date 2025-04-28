@@ -13,8 +13,7 @@ const existingReadme = fs.readFileSync('./README.md').toString();
 const searchRegion = '<!--DOCS START-->';
 const untilIndex = existingReadme.indexOf(searchRegion);
 
-if (untilIndex <= 0) {
-  throw new Error('Region ' + JSON.stringify(searchRegion) + ' not found!');
+if (untilIndex === -1) {
 }
 
 let mdOutput = existingReadme.substring(0, untilIndex + searchRegion.length) + '\n\n# API';
