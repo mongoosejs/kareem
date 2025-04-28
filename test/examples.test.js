@@ -48,7 +48,7 @@ describe('pre hooks', function() {
     });
   });
 
-  it('can run multipe pre hooks', function(done) {
+  it('can run multiple pre hooks', function(done) {
     let count1 = 0;
     let count2 = 0;
 

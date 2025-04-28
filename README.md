@@ -48,7 +48,7 @@ hooks.execPre('cook', null, function() {
 });
 ```
 
-### It can run multipe pre hooks
+### It can run multiple pre hooks
 
 ```javascript
 let count1 = 0;
