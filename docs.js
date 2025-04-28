@@ -1,41 +1,47 @@
 'use strict';
 
 const acquit = require('acquit');
+const fs = require('fs');
 
 require('acquit-ignore')();
 
-const content = require('fs').readFileSync('./test/examples.test.js').toString();
+const content = fs.readFileSync('./test/examples.test.js').toString();
 const blocks = acquit.parse(content);
 
-let mdOutput =
-  '# kareem\n\n' +
-  '  [![Build Status](https://travis-ci.org/vkarpov15/kareem.svg?branch=master)](https://travis-ci.org/vkarpov15/kareem)\n' +
-  '  [![Coverage Status](https://img.shields.io/coveralls/vkarpov15/kareem.svg)](https://coveralls.io/r/vkarpov15/kareem)\n\n' +
-  'Re-imagined take on the [hooks](http://npmjs.org/package/hooks) module, ' +
-  'meant to offer additional flexibility in allowing you to execute hooks ' +
-  'whenever necessary, as opposed to simply wrapping a single function.\n\n' +
-  'Named for the NBA\'s all-time leading scorer Kareem Abdul-Jabbar, known ' +
-  'for his mastery of the [hook shot](http://en.wikipedia.org/wiki/Kareem_Abdul-Jabbar#Skyhook)\n\n' +
-  '<img src="http://upload.wikimedia.org/wikipedia/commons/0/00/Kareem-Abdul-Jabbar_Lipofsky.jpg" width="220">\n\n' +
-  '# API\n\n';
+// include the README until after the specified tag as static non-generated content
+const existingReadme = fs.readFileSync('./README.md').toString();
+const searchRegion = '<!--DOCS START-->';
+const untilIndex = existingReadme.indexOf(searchRegion);
 
-for (let i = 0; i < blocks.length; ++i) {
-  const describe = blocks[i];
-  mdOutput += '## ' + describe.contents + '\n\n';
-  mdOutput += describe.comments[0] ?
-    acquit.trimEachLine(describe.comments[0]) + '\n\n' :
-    '';
+if (untilIndex === -1) {
+}
 
-  for (let j = 0; j < describe.blocks.length; ++j) {
-    const it = describe.blocks[j];
-    mdOutput += '#### It ' + it.contents + '\n\n';
-    mdOutput += it.comments[0] ?
-      acquit.trimEachLine(it.comments[0]) + '\n\n' :
-      '';
+let mdOutput = existingReadme.substring(0, untilIndex + searchRegion.length) + '\n\n# API';
+
+for (const describe of blocks) {
+  mdOutput += '\n\n';
+  mdOutput += '## ' + describe.contents;
+  // only add spacing and comments, if there are comments
+  if (describe.comments[0]) {
+    mdOutput += '\n\n';
+    // acquit "trimEachLine" does not actually trim the last line for some reason
+    mdOutput += acquit.trimEachLine(describe.comments[0]).trim();
+  }
+
+  for (const it of describe.blocks) {
+    mdOutput += '\n\n';
+    mdOutput += '### It ' + it.contents + '\n\n';
+
+    if (it.comments[0]) {
+      mdOutput += acquit.trimEachLine(it.comments[0]) + '\n';
+    }
+
     mdOutput += '```javascript\n';
     mdOutput += it.code + '\n';
-    mdOutput += '```\n\n';
+    mdOutput += '```';
   }
 }
 
-require('fs').writeFileSync('README.md', mdOutput);
+mdOutput += '\n';
+
+fs.writeFileSync('README.md', mdOutput);
