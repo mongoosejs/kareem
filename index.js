@@ -28,61 +28,59 @@ Kareem.overwriteResult = function overwriteResult() {
  * Execute all "pre" hooks for "name"
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
- * @param {Array|Function} args Optional arguments or directly the callback
- * @param {Function} [callback] The callback to call when executing all hooks are finished
+ * @param {Array|Function} args arguments passed to the pre hooks
  * @returns {void}
  */
-Kareem.prototype.execPre = function(name, context, args, callback) {
-  if (arguments.length === 3) {
-    callback = args;
-    args = [];
-  }
+Kareem.prototype.execPre = async function execPre(name, context, args) {
   const pres = this._pres.get(name) || [];
   const numPres = pres.length;
-  const numAsyncPres = pres.numAsync || 0;
-  let currentPre = 0;
-  let asyncPresLeft = numAsyncPres;
-  let done = false;
   const $args = args;
-  let shouldSkipWrappedFunction = null;
+  let skipWrappedFunction = null;
 
   if (!numPres) {
-    return nextTick(function() {
-      callback(null);
-    });
+    return;
   }
 
-  function next() {
-    if (currentPre >= numPres) {
-      return;
-    }
-    const pre = pres[currentPre];
-
+  const asyncPrePromises = [];
+  for (const pre of pres) {
     if (pre.isAsync) {
-      const args = [
-        decorateNextFn(_next),
-        decorateNextFn(function(error) {
-          if (error) {
-            if (done) {
-              return;
-            }
-            if (error instanceof Kareem.skipWrappedFunction) {
-              shouldSkipWrappedFunction = error;
-            } else {
-              done = true;
-              return callback(error);
-            }
-          }
-          if (--asyncPresLeft === 0 && currentPre >= numPres) {
-            return callback(shouldSkipWrappedFunction);
-          }
-        })
-      ];
-
-      callMiddlewareFunction(pre.fn, context, args, args[0]);
+      let nextResolve = null;
+      let nextReject = null;
+      const nextPromise = new Promise((resolve, reject) => {
+        nextResolve = resolve;
+        nextReject = reject;
+      });
+      let doneResolve = null;
+      let doneReject = null;
+      const donePromise = new Promise((resolve, reject) => {
+        doneResolve = resolve;
+        doneReject = reject;
+      });
+      const args = [(err) => err ? nextReject(err) : nextResolve(), (err) => err ? doneReject(err) : doneResolve()];
+      const maybePromiseLike = pre.fn.apply(context, args);
+      try {
+        if (isPromiseLike(maybePromiseLike)) {
+          await maybePromiseLike;
+        } else {
+          await nextPromise;
+        }
+      } catch (error) {
+        if (error instanceof Kareem.skipWrappedFunction) {
+          skipWrappedFunction = error;
+          continue;
+        }
+        throw error;
+      }
+      asyncPrePromises.push(donePromise);
     } else if (pre.fn.length > 0) {
-      const args = [decorateNextFn(_next)];
-      const _args = arguments.length >= 2 ? arguments : [null].concat($args);
+      let resolve = null;
+      let reject = null;
+      const cbPromise = new Promise((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+      const args = [(err) => err ? reject(err) : resolve()];
+      const _args = [null].concat($args);
       for (let i = 1; i < _args.length; ++i) {
         if (i === _args.length - 1 && typeof _args[i] === 'function') {
           continue; // skip callbacks to avoid accidentally calling the callback from a hook
@@ -90,60 +88,37 @@ Kareem.prototype.execPre = function(name, context, args, callback) {
         args.push(_args[i]);
       }
 
-      callMiddlewareFunction(pre.fn, context, args, args[0]);
-    } else {
-      let maybePromiseLike = null;
       try {
-        maybePromiseLike = pre.fn.call(context);
-      } catch (err) {
-        if (err != null) {
-          return callback(err);
+        const maybePromiseLike = pre.fn.apply(context, args);
+        if (isPromiseLike(maybePromiseLike)) {
+          await maybePromiseLike;
+        } else {
+          await cbPromise;
         }
+      } catch (error) {
+        if (error instanceof Kareem.skipWrappedFunction) {
+          skipWrappedFunction = error;
+          continue;
+        }
+        throw error;
       }
-
-      if (isPromiseLike(maybePromiseLike)) {
-        maybePromiseLike.then(() => _next(), err => _next(err));
-      } else {
-        if (++currentPre >= numPres) {
-          if (asyncPresLeft > 0) {
-            // Leave parallel hooks to run
-            return;
-          } else {
-            return nextTick(function() {
-              callback(shouldSkipWrappedFunction);
-            });
-          }
+    } else {
+      try {
+        await pre.fn.call(context);
+      } catch (error) {
+        if (error instanceof Kareem.skipWrappedFunction) {
+          skipWrappedFunction = error;
+          continue;
         }
-        next();
+        throw error;
       }
     }
   }
 
-  next.apply(null, [null].concat(args));
+  await Promise.all(asyncPrePromises);
 
-  function _next(error) {
-    if (error) {
-      if (done) {
-        return;
-      }
-      if (error instanceof Kareem.skipWrappedFunction) {
-        shouldSkipWrappedFunction = error;
-      } else {
-        done = true;
-        return callback(error);
-      }
-    }
-
-    if (++currentPre >= numPres) {
-      if (asyncPresLeft > 0) {
-        // Leave parallel hooks to run
-        return;
-      } else {
-        return callback(shouldSkipWrappedFunction);
-      }
-    }
-
-    next.apply(context, arguments);
+  if (skipWrappedFunction) {
+    throw skipWrappedFunction;
   }
 };
 
@@ -169,17 +144,11 @@ Kareem.prototype.execPreSync = function(name, context, args) {
  * @param {*} context Overwrite the "this" for the hook
  * @param {Array|Function} args Apply custom arguments to the hook
  * @param {*} options Optional options or directly the callback
- * @param {Function} [callback] The callback to call when executing all hooks are finished
  * @returns {void}
  */
-Kareem.prototype.execPost = function(name, context, args, options, callback) {
-  if (arguments.length < 5) {
-    callback = options;
-    options = null;
-  }
+Kareem.prototype.execPost = async function execPost(name, context, args, options) {
   const posts = this._posts.get(name) || [];
   const numPosts = posts.length;
-  let currentPost = 0;
 
   let firstError = null;
   if (options && options.error) {
@@ -187,113 +156,101 @@ Kareem.prototype.execPost = function(name, context, args, options, callback) {
   }
 
   if (!numPosts) {
-    return nextTick(function() {
-      callback.apply(null, [firstError].concat(args));
-    });
+    if (firstError != null) {
+      throw firstError;
+    }
+    return args;
   }
 
-  function next() {
-    const post = posts[currentPost].fn;
+  for (const currentPost of posts) {
+    const post = currentPost.fn;
     let numArgs = 0;
-    const argLength = args.length;
     const newArgs = [];
+    const argLength = args.length;
     for (let i = 0; i < argLength; ++i) {
-      numArgs += args[i] && args[i]._kareemIgnore ? 0 : 1;
       if (!args[i] || !args[i]._kareemIgnore) {
+        numArgs += 1;
         newArgs.push(args[i]);
       }
     }
+    // If numCallbackParams set, fill in the rest with null to enforce consistent number of args
+    if (options?.numCallbackParams != null) {
+      numArgs = options.numCallbackParams;
+      for (let i = newArgs.length; i < numArgs; ++i) {
+        newArgs.push(null);
+      }
+    }
+
+    let resolve;
+    let reject;
+    const cbPromise = new Promise((_resolve, _reject) => {
+      resolve = _resolve;
+      reject = _reject;
+    });
+    newArgs.push(function nextCallback(err) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
 
     if (firstError) {
-      if (isErrorHandlingMiddleware(posts[currentPost], numArgs)) {
-        const _cb = decorateNextFn(function(error) {
-          if (error) {
-            if (error instanceof Kareem.overwriteResult) {
-              args = error.args;
-              if (++currentPost >= numPosts) {
-                return callback.call(null, firstError);
-              }
-              return next();
-            }
-            firstError = error;
+      if (isErrorHandlingMiddleware(currentPost, numArgs)) {
+        try {
+          const res = post.apply(context, [firstError].concat(newArgs));
+          if (isPromiseLike(res)) {
+            await res;
+          } else if (post.length === numArgs + 2) {
+            // `numArgs + 2` because we added the error and the callback
+            await cbPromise;
           }
-          if (++currentPost >= numPosts) {
-            return callback.call(null, firstError);
-          }
-          next();
-        });
-
-        callMiddlewareFunction(post, context,
-          [firstError].concat(newArgs).concat([_cb]), _cb);
-      } else {
-        if (++currentPost >= numPosts) {
-          return callback.call(null, firstError);
-        }
-        next();
-      }
-    } else {
-      const _cb = decorateNextFn(function(error) {
-        if (error) {
+        } catch (error) {
           if (error instanceof Kareem.overwriteResult) {
             args = error.args;
-            if (++currentPost >= numPosts) {
-              return callback.apply(null, [null].concat(args));
-            }
-            return next();
+            continue;
           }
           firstError = error;
-          return next();
         }
-
-        if (++currentPost >= numPosts) {
-          return callback.apply(null, [null].concat(args));
-        }
-
-        next();
-      });
-
-      if (isErrorHandlingMiddleware(posts[currentPost], numArgs)) {
-        // Skip error handlers if no error
-        if (++currentPost >= numPosts) {
-          return callback.apply(null, [null].concat(args));
-        }
-        return next();
-      }
-      if (post.length === numArgs + 1) {
-        callMiddlewareFunction(post, context, newArgs.concat([_cb]), _cb);
       } else {
-        let error;
-        let maybePromiseLike;
+        continue;
+      }
+    } else {
+      if (isErrorHandlingMiddleware(currentPost, numArgs)) {
+        // Skip error handlers if no error
+        continue;
+      } else {
+        let res = null;
         try {
-          maybePromiseLike = post.apply(context, newArgs);
-        } catch (err) {
-          error = err;
-          firstError = err;
+          res = post.apply(context, newArgs);
+          if (isPromiseLike(res)) {
+            res = await res;
+          } else if (post.length === numArgs + 1) {
+            // If post function takes a callback, wait for the post function to call the callback
+            res = await cbPromise;
+          }
+        } catch (error) {
+          if (error instanceof Kareem.overwriteResult) {
+            args = error.args;
+            continue;
+          }
+          firstError = error;
+          continue;
         }
 
-        if (isPromiseLike(maybePromiseLike)) {
-          return maybePromiseLike.then(
-            (res) => {
-              _cb(res instanceof Kareem.overwriteResult ? res : null);
-            },
-            err => _cb(err)
-          );
+        if (res instanceof Kareem.overwriteResult) {
+          args = res.args;
+          continue;
         }
-
-        if (maybePromiseLike instanceof Kareem.overwriteResult) {
-          args = maybePromiseLike.args;
-        }
-
-        if (++currentPost >= numPosts) {
-          return callback.apply(null, [error].concat(args));
-        }
-
-        next();
       }
     }
   }
 
-  next();
+  if (firstError != null) {
+    throw firstError;
+  }
+
+  return args;
 };
 
 /**
@@ -336,98 +293,36 @@ Kareem.prototype.createWrapperSync = function(name, fn) {
   };
 };
 
-function _handleWrapError(instance, error, name, context, args, options, callback) {
-  if (options.useErrorHandlers) {
-    return instance.execPost(name, context, args, { error: error }, function(error) {
-      return typeof callback === 'function' && callback(error);
-    });
-  } else {
-    return typeof callback === 'function' && callback(error);
-  }
-}
-
 /**
  * Executes pre hooks, followed by the wrapped function, followed by post hooks.
  * @param {String} name The name of the hook
  * @param {Function} fn The function for the hook
  * @param {*} context Overwrite the "this" for the hook
  * @param {Array} args Apply custom arguments to the hook
- * @param {Object} [options]
- * @param {Boolean} [options.checkForPromise]
+ * @param {Object} options Additional options for the hook
  * @returns {void}
  */
-Kareem.prototype.wrap = function(name, fn, context, args, options) {
-  const lastArg = (args.length > 0 ? args[args.length - 1] : null);
-  const argsWithoutCb = Array.from(args);
-  typeof lastArg === 'function' && argsWithoutCb.pop();
-  const _this = this;
-
-  options = options || {};
-  const checkForPromise = options.checkForPromise;
-
-  this.execPre(name, context, args, function(error) {
-    if (error && !(error instanceof Kareem.skipWrappedFunction)) {
-      const numCallbackParams = options.numCallbackParams || 0;
-      const errorArgs = options.contextParameter ? [context] : [];
-      for (let i = errorArgs.length; i < numCallbackParams; ++i) {
-        errorArgs.push(null);
-      }
-      return _handleWrapError(_this, error, name, context, errorArgs,
-        options, lastArg);
-    }
-
-    const numParameters = fn.length;
-    let ret;
-
+Kareem.prototype.wrap = async function wrap(name, fn, context, args, options) {
+  let ret;
+  let skipWrappedFunction = false;
+  try {
+    await this.execPre(name, context, args);
+  } catch (error) {
     if (error instanceof Kareem.skipWrappedFunction) {
-      ret = error.args[0];
-      return _cb(null, ...error.args);
+      ret = error.args;
+      skipWrappedFunction = true;
     } else {
-      try {
-        ret = fn.apply(context, argsWithoutCb.concat(_cb));
-      } catch (err) {
-        return _cb(err);
-      }
+      await this.execPost(name, context, args, { ...options, error });
     }
+  }
 
-    if (checkForPromise) {
-      if (isPromiseLike(ret)) {
-        // Thenable, use it
-        return ret.then(
-          res => _cb(null, res),
-          err => _cb(err)
-        );
-      }
+  if (!skipWrappedFunction) {
+    ret = await fn.apply(context, args);
+  }
 
-      // If `fn()` doesn't have a callback argument and doesn't return a
-      // promise, assume it is sync
-      if (numParameters < argsWithoutCb.length + 1) {
-        return _cb(null, ret);
-      }
-    }
+  ret = await this.execPost(name, context, [ret], options);
 
-    function _cb() {
-      const argsWithoutError = Array.from(arguments);
-      argsWithoutError.shift();
-      if (options.nullResultByDefault && argsWithoutError.length === 0) {
-        argsWithoutError.push(null);
-      }
-      if (arguments[0]) {
-        // Assume error
-        return _handleWrapError(_this, arguments[0], name, context,
-          argsWithoutError, options, lastArg);
-      } else {
-        _this.execPost(name, context, argsWithoutError, function() {
-          if (lastArg === null) {
-            return;
-          }
-          arguments[0]
-            ? lastArg(arguments[0])
-            : lastArg.apply(context, arguments);
-        });
-      }
-    }
-  });
+  return ret[0];
 };
 
 /**
@@ -491,15 +386,12 @@ Kareem.prototype.hasHooks = function(name) {
 Kareem.prototype.createWrapper = function(name, fn, context, options) {
   const _this = this;
   if (!this.hasHooks(name)) {
-    // Fast path: if there's no hooks for this function, just return the
-    // function wrapped in a nextTick()
-    return function() {
-      nextTick(() => fn.apply(this, arguments));
-    };
+    // Fast path: if there's no hooks for this function, just return the function
+    return fn;
   }
-  return function() {
+  return function kareemWrappedFunction() {
     const _context = context || this;
-    _this.wrap(name, fn, _context, Array.from(arguments), options);
+    return _this.wrap(name, fn, _context, Array.from(arguments), options);
   };
 };
 
@@ -547,6 +439,7 @@ Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
  * Register a new hook for "post"
  * @param {String} name The name of the hook
  * @param {Object} [options]
+ * @param {Boolean} [options.errorHandler] Whether this is an error handler
  * @param {Function} fn The function to register for "name"
  * @param {Boolean} [unshift] Wheter to "push" or to "unshift" the new hook
  * @returns {Kareem}
@@ -571,6 +464,24 @@ Kareem.prototype.post = function(name, options, fn, unshift) {
   }
   this._posts.set(name, posts);
   return this;
+};
+
+/**
+ * Register a new error handler for "name"
+ * @param {String} name The name of the hook
+ * @param {Object} [options]
+ * @param {Function} fn The function to register for "name"
+ * @param {Boolean} [unshift] Wheter to "push" or to "unshift" the new hook
+ * @returns {Kareem}
+ */
+
+Kareem.prototype.postError = function postError(name, options, fn, unshift) {
+  if (typeof options === 'function') {
+    unshift = !!fn;
+    fn = options;
+    options = {};
+  }
+  return this.post(name, { ...options, errorHandler: true }, fn, unshift);
 };
 
 /**
@@ -622,41 +533,9 @@ Kareem.prototype.merge = function(other, clone) {
   return ret;
 };
 
-function callMiddlewareFunction(fn, context, args, next) {
-  let maybePromiseLike;
-  try {
-    maybePromiseLike = fn.apply(context, args);
-  } catch (error) {
-    return next(error);
-  }
-
-  if (isPromiseLike(maybePromiseLike)) {
-    maybePromiseLike.then(() => next(), err => next(err));
-  }
-}
-
 function isPromiseLike(v) {
   return (typeof v === 'object' && v !== null && typeof v.then === 'function');
 }
-
-function decorateNextFn(fn) {
-  let called = false;
-  const _this = this;
-  return function() {
-    // Ensure this function can only be called once
-    if (called) {
-      return;
-    }
-    called = true;
-    // Make sure to clear the stack so try/catch doesn't catch errors
-    // in subsequent middleware
-    return nextTick(() => fn.apply(_this, arguments));
-  };
-}
-
-const nextTick = typeof process === 'object' && process !== null && process.nextTick || function nextTick(cb) {
-  setTimeout(cb, 0);
-};
 
 function isErrorHandlingMiddleware(post, numArgs) {
   if (post.errorHandler) {

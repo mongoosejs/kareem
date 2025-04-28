@@ -20,19 +20,14 @@ describe('pre hooks', function() {
     hooks = new Kareem();
   });
 
-  it('runs without any hooks specified', function(done) {
-    hooks.execPre('cook', null, function() {
-      // ...
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+  it('runs without any hooks specified', async function() {
+    await hooks.execPre('cook', null);
   });
 
   /* pre hook functions take one parameter, a "done" function that you execute
    * when your pre hook is finished.
    */
-  it('runs basic serial pre hooks', function(done) {
+  it('runs basic serial pre hooks', async function() {
     let count = 0;
 
     hooks.pre('cook', function(done) {
@@ -40,15 +35,11 @@ describe('pre hooks', function() {
       done();
     });
 
-    hooks.execPre('cook', null, function() {
-      assert.equal(1, count);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    await hooks.execPre('cook', null);
+    assert.equal(1, count);
   });
 
-  it('can run multiple pre hooks', function(done) {
+  it('can run multiple pre hooks', async function() {
     let count1 = 0;
     let count2 = 0;
 
@@ -62,19 +53,15 @@ describe('pre hooks', function() {
       done();
     });
 
-    hooks.execPre('cook', null, function() {
-      assert.equal(1, count1);
-      assert.equal(1, count2);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    await hooks.execPre('cook', null);
+    assert.equal(1, count1);
+    assert.equal(1, count2);
   });
 
   /* If your pre hook function takes no parameters, its assumed to be
    * fully synchronous.
    */
-  it('can run fully synchronous pre hooks', function(done) {
+  it('can run fully synchronous pre hooks', async function() {
     let count1 = 0;
     let count2 = 0;
 
@@ -86,19 +73,14 @@ describe('pre hooks', function() {
       ++count2;
     });
 
-    hooks.execPre('cook', null, function(error) {
-      assert.equal(null, error);
-      assert.equal(1, count1);
-      assert.equal(1, count2);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    await hooks.execPre('cook', null);
+    assert.equal(1, count1);
+    assert.equal(1, count2);
   });
 
   /* Pre save hook functions are bound to the second parameter to `execPre()`
    */
-  it('properly attaches context to pre hooks', function(done) {
+  it('properly attaches context to pre hooks', async function() {
     hooks.pre('cook', function(done) {
       this.bacon = 3;
       done();
@@ -112,14 +94,9 @@ describe('pre hooks', function() {
     const obj = { bacon: 0, eggs: 0 };
 
     // In the pre hooks, `this` will refer to `obj`
-    hooks.execPre('cook', obj, function(error) {
-      assert.equal(null, error);
-      assert.equal(3, obj.bacon);
-      assert.equal(4, obj.eggs);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    await hooks.execPre('cook', obj);
+    assert.equal(3, obj.bacon);
+    assert.equal(4, obj.eggs);
   });
 
   /* Like the hooks module, you can declare "async" pre hooks - these take two
@@ -127,7 +104,7 @@ describe('pre hooks', function() {
    * the next pre hook, but the underlying function won't be called until all
    * async pre hooks have called `done()`.
    */
-  it('can execute parallel (async) pre hooks', function(done) {
+  it('can execute parallel (async) pre hooks', async function() {
     hooks.pre('cook', true, function(next, done) {
       this.bacon = 3;
       next();
@@ -152,21 +129,17 @@ describe('pre hooks', function() {
 
     const obj = { bacon: 0, eggs: 0 };
 
-    hooks.execPre('cook', obj, function() {
-      assert.equal(3, obj.bacon);
-      assert.equal(4, obj.eggs);
-      assert.equal(false, obj.waffles);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    await hooks.execPre('cook', obj);
+    assert.equal(3, obj.bacon);
+    assert.equal(4, obj.eggs);
+    assert.equal(false, obj.waffles);
   });
 
   /* You can also return a promise from your pre hooks instead of calling
    * `next()`. When the returned promise resolves, kareem will kick off the
    * next middleware.
    */
-  it('supports returning a promise', function(done) {
+  it('supports returning a promise', async function() {
     hooks.pre('cook', function() {
       return new Promise(resolve => {
         setTimeout(() => {
@@ -178,12 +151,8 @@ describe('pre hooks', function() {
 
     const obj = { bacon: 0 };
 
-    hooks.execPre('cook', obj, function() {
-      assert.equal(3, obj.bacon);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    await hooks.execPre('cook', obj);
+    assert.equal(3, obj.bacon);
   });
 });
 
@@ -195,65 +164,52 @@ describe('post hooks', function() {
     hooks = new Kareem();
   });
 
-  it('runs without any hooks specified', function(done) {
-    hooks.execPost('cook', null, [1], function(error, eggs) {
-      assert.ifError(error);
-      assert.equal(1, eggs);
-      done();
-    });
+  it('runs without any hooks specified', async function() {
+    const [eggs] = await hooks.execPost('cook', null, [1]);
+    assert.equal(eggs, 1);
   });
 
-  it('executes with parameters passed in', function(done) {
+  it('executes with parameters passed in', async function() {
     hooks.post('cook', function(eggs, bacon, callback) {
-      assert.equal(1, eggs);
-      assert.equal(2, bacon);
+      assert.equal(eggs, 1);
+      assert.equal(bacon, 2);
       callback();
     });
 
-    hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
-      assert.ifError(error);
-      assert.equal(1, eggs);
-      assert.equal(2, bacon);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    const [eggs, bacon] = await hooks.execPost('cook', null, [1, 2]);
+    assert.equal(eggs, 1);
+    assert.equal(bacon, 2);
   });
 
-  it('can use synchronous post hooks', function(done) {
+  it('can use synchronous post hooks', async function() {
     const execed = {};
 
     hooks.post('cook', function(eggs, bacon) {
       execed.first = true;
-      assert.equal(1, eggs);
-      assert.equal(2, bacon);
+      assert.equal(eggs, 1);
+      assert.equal(bacon, 2);
     });
 
     hooks.post('cook', function(eggs, bacon, callback) {
       execed.second = true;
-      assert.equal(1, eggs);
-      assert.equal(2, bacon);
+      assert.equal(eggs, 1);
+      assert.equal(bacon, 2);
       callback();
     });
 
-    hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
-      assert.ifError(error);
-      assert.equal(2, Object.keys(execed).length);
-      assert.ok(execed.first);
-      assert.ok(execed.second);
-      assert.equal(1, eggs);
-      assert.equal(2, bacon);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    const [eggs, bacon] = await hooks.execPost('cook', null, [1, 2]);
+    assert.equal(Object.keys(execed).length, 2);
+    assert.ok(execed.first);
+    assert.ok(execed.second);
+    assert.equal(eggs, 1);
+    assert.equal(bacon, 2);
   });
 
   /* You can also return a promise from your post hooks instead of calling
    * `next()`. When the returned promise resolves, kareem will kick off the
    * next middleware.
    */
-  it('supports returning a promise', function(done) {
+  it('supports returning a promise', async function() {
     hooks.post('cook', function() {
       return new Promise(resolve => {
         setTimeout(() => {
@@ -265,12 +221,8 @@ describe('post hooks', function() {
 
     const obj = { bacon: 0 };
 
-    hooks.execPost('cook', obj, obj, function() {
-      assert.equal(obj.bacon, 3);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    await hooks.execPost('cook', obj, [obj]);
+    assert.equal(obj.bacon, 3);
   });
 });
 
@@ -282,7 +234,7 @@ describe('wrap()', function() {
     hooks = new Kareem();
   });
 
-  it('wraps pre and post calls into one call', function(done) {
+  it('wraps pre and post calls into one call', async function() {
     hooks.pre('cook', true, function(next, done) {
       this.bacon = 3;
       next();
@@ -312,31 +264,24 @@ describe('wrap()', function() {
     const obj = { bacon: 0, eggs: 0 };
 
     const args = [obj];
-    args.push(function(error, result) {
-      assert.ifError(error);
-      assert.equal(null, error);
-      assert.equal(3, obj.bacon);
-      assert.equal(4, obj.eggs);
-      assert.equal(false, obj.waffles);
-      assert.equal('no', obj.tofu);
 
-      assert.equal(obj, result);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
-
-    hooks.wrap(
+    const result = await hooks.wrap(
       'cook',
-      function(o, callback) {
-        assert.equal(3, obj.bacon);
-        assert.equal(4, obj.eggs);
-        assert.equal(false, obj.waffles);
-        assert.equal(undefined, obj.tofu);
-        callback(null, o);
+      function(o) {
+        assert.equal(obj.bacon, 3);
+        assert.equal(obj.eggs, 4);
+        assert.equal(obj.waffles, false);
+        assert.equal(obj.tofu, undefined);
+        return o;
       },
       obj,
       args);
+
+    assert.equal(obj.bacon, 3);
+    assert.equal(obj.eggs, 4);
+    assert.equal(obj.waffles, false);
+    assert.equal(obj.tofu, 'no');
+    assert.equal(result, obj);
   });
 });
 
@@ -348,7 +293,7 @@ describe('createWrapper()', function() {
     hooks = new Kareem();
   });
 
-  it('wraps wrap() into a callable function', function(done) {
+  it('wraps wrap() into a callable function', async function() {
     hooks.pre('cook', true, function(next, done) {
       this.bacon = 3;
       next();
@@ -379,27 +324,22 @@ describe('createWrapper()', function() {
 
     const cook = hooks.createWrapper(
       'cook',
-      function(o, callback) {
+      function(o) {
         assert.equal(3, obj.bacon);
         assert.equal(4, obj.eggs);
         assert.equal(false, obj.waffles);
         assert.equal(undefined, obj.tofu);
-        callback(null, o);
+        return o;
       },
       obj);
 
-    cook(obj, function(error, result) {
-      assert.ifError(error);
-      assert.equal(3, obj.bacon);
-      assert.equal(4, obj.eggs);
-      assert.equal(false, obj.waffles);
-      assert.equal('no', obj.tofu);
+    const result = await cook(obj);
+    assert.equal(obj.bacon, 3);
+    assert.equal(obj.eggs, 4);
+    assert.equal(obj.waffles, false);
+    assert.equal(obj.tofu, 'no');
 
-      assert.equal(obj, result);
-      // acquit:ignore:start
-      done();
-      // acquit:ignore:end
-    });
+    assert.equal(result, obj);
   });
 });
 
