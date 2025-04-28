@@ -4,6 +4,8 @@ const assert = require('assert');
 const { beforeEach, describe, it } = require('mocha');
 const Kareem = require('../');
 
+// NOTE: this file has some empty comment lines to workaround https://github.com/vkarpov15/acquit/issues/30
+
 /* Much like [hooks](https://npmjs.org/package/hooks), kareem lets you define
  * pre and post hooks: pre hooks are called before a given function executes.
  * Unlike hooks, kareem stores hooks and other internal state in a separate
@@ -185,6 +187,7 @@ describe('pre hooks', function() {
   });
 });
 
+//
 describe('post hooks', function() {
   let hooks;
 
@@ -271,6 +274,7 @@ describe('post hooks', function() {
   });
 });
 
+//
 describe('wrap()', function() {
   let hooks;
 
@@ -336,6 +340,7 @@ describe('wrap()', function() {
   });
 });
 
+//
 describe('createWrapper()', function() {
   let hooks;
 
@@ -398,6 +403,7 @@ describe('createWrapper()', function() {
   });
 });
 
+//
 describe('clone()', function() {
   it('clones a Kareem object', function() {
     const k1 = new Kareem();
@@ -410,6 +416,7 @@ describe('clone()', function() {
   });
 });
 
+//
 describe('merge()', function() {
   it('pulls hooks from another Kareem object', function() {
     const k1 = new Kareem();

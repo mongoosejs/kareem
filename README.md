@@ -9,6 +9,8 @@ Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his m
 
 <img src="http://upload.wikimedia.org/wikipedia/commons/0/00/Kareem-Abdul-Jabbar_Lipofsky.jpg" width="220">
 
+<!--DOCS START-->
+
 # API
 
 ## pre hooks
@@ -20,8 +22,7 @@ object, rather than relying on inheritance. Furthermore, kareem exposes
 an `execPre()` function that allows you to execute your pre hooks when
 appropriate, giving you more fine-grained control over your function hooks.
 
-
-#### It runs without any hooks specified
+### It runs without any hooks specified
 
 ```javascript
 hooks.execPre('cook', null, function() {
@@ -29,14 +30,13 @@ hooks.execPre('cook', null, function() {
 });
 ```
 
-#### It runs basic serial pre hooks
+### It runs basic serial pre hooks
 
 pre hook functions take one parameter, a "done" function that you execute
 when your pre hook is finished.
 
-
 ```javascript
-var count = 0;
+let count = 0;
 
 hooks.pre('cook', function(done) {
   ++count;
@@ -48,11 +48,11 @@ hooks.execPre('cook', null, function() {
 });
 ```
 
-#### It can run multipe pre hooks
+### It can run multipe pre hooks
 
 ```javascript
-var count1 = 0;
-var count2 = 0;
+let count1 = 0;
+let count2 = 0;
 
 hooks.pre('cook', function(done) {
   ++count1;
@@ -70,15 +70,14 @@ hooks.execPre('cook', null, function() {
 });
 ```
 
-#### It can run fully synchronous pre hooks
+### It can run fully synchronous pre hooks
 
 If your pre hook function takes no parameters, its assumed to be
 fully synchronous.
 
-
 ```javascript
-var count1 = 0;
-var count2 = 0;
+let count1 = 0;
+let count2 = 0;
 
 hooks.pre('cook', function() {
   ++count1;
@@ -95,10 +94,9 @@ hooks.execPre('cook', null, function(error) {
 });
 ```
 
-#### It properly attaches context to pre hooks
+### It properly attaches context to pre hooks
 
 Pre save hook functions are bound to the second parameter to `execPre()`
-
 
 ```javascript
 hooks.pre('cook', function(done) {
@@ -111,7 +109,7 @@ hooks.pre('cook', function(done) {
   done();
 });
 
-var obj = { bacon: 0, eggs: 0 };
+const obj = { bacon: 0, eggs: 0 };
 
 // In the pre hooks, `this` will refer to `obj`
 hooks.execPre('cook', obj, function(error) {
@@ -121,13 +119,12 @@ hooks.execPre('cook', obj, function(error) {
 });
 ```
 
-#### It can execute parallel (async) pre hooks
+### It can execute parallel (async) pre hooks
 
 Like the hooks module, you can declare "async" pre hooks - these take two
 parameters, the functions `next()` and `done()`. `next()` passes control to
 the next pre hook, but the underlying function won't be called until all
 async pre hooks have called `done()`.
-
 
 ```javascript
 hooks.pre('cook', true, function(next, done) {
@@ -140,7 +137,7 @@ hooks.pre('cook', true, function(next, done) {
 
 hooks.pre('cook', true, function(next, done) {
   next();
-  var _this = this;
+  const _this = this;
   setTimeout(function() {
     _this.eggs = 4;
     done();
@@ -152,7 +149,7 @@ hooks.pre('cook', function(next) {
   next();
 });
 
-var obj = { bacon: 0, eggs: 0 };
+const obj = { bacon: 0, eggs: 0 };
 
 hooks.execPre('cook', obj, function() {
   assert.equal(3, obj.bacon);
@@ -161,12 +158,11 @@ hooks.execPre('cook', obj, function() {
 });
 ```
 
-#### It supports returning a promise
+### It supports returning a promise
 
 You can also return a promise from your pre hooks instead of calling
 `next()`. When the returned promise resolves, kareem will kick off the
 next middleware.
-
 
 ```javascript
 hooks.pre('cook', function() {
@@ -178,7 +174,7 @@ hooks.pre('cook', function() {
   });
 });
 
-var obj = { bacon: 0 };
+const obj = { bacon: 0 };
 
 hooks.execPre('cook', obj, function() {
   assert.equal(3, obj.bacon);
@@ -187,9 +183,7 @@ hooks.execPre('cook', obj, function() {
 
 ## post hooks
 
-acquit:ignore:end
-
-#### It runs without any hooks specified
+### It runs without any hooks specified
 
 ```javascript
 hooks.execPost('cook', null, [1], function(error, eggs) {
@@ -199,7 +193,7 @@ hooks.execPost('cook', null, [1], function(error, eggs) {
 });
 ```
 
-#### It executes with parameters passed in
+### It executes with parameters passed in
 
 ```javascript
 hooks.post('cook', function(eggs, bacon, callback) {
@@ -215,10 +209,10 @@ hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
 });
 ```
 
-#### It can use synchronous post hooks
+### It can use synchronous post hooks
 
 ```javascript
-var execed = {};
+const execed = {};
 
 hooks.post('cook', function(eggs, bacon) {
   execed.first = true;
@@ -243,15 +237,14 @@ hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
 });
 ```
 
-#### It supports returning a promise
+### It supports returning a promise
 
 You can also return a promise from your post hooks instead of calling
 `next()`. When the returned promise resolves, kareem will kick off the
 next middleware.
 
-
 ```javascript
-hooks.post('cook', function(bacon) {
+hooks.post('cook', function() {
   return new Promise(resolve => {
     setTimeout(() => {
       this.bacon = 3;
@@ -260,7 +253,7 @@ hooks.post('cook', function(bacon) {
   });
 });
 
-var obj = { bacon: 0 };
+const obj = { bacon: 0 };
 
 hooks.execPost('cook', obj, obj, function() {
   assert.equal(obj.bacon, 3);
@@ -269,9 +262,7 @@ hooks.execPost('cook', obj, obj, function() {
 
 ## wrap()
 
-acquit:ignore:end
-
-#### It wraps pre and post calls into one call
+### It wraps pre and post calls into one call
 
 ```javascript
 hooks.pre('cook', true, function(next, done) {
@@ -284,7 +275,7 @@ hooks.pre('cook', true, function(next, done) {
 
 hooks.pre('cook', true, function(next, done) {
   next();
-  var _this = this;
+  const _this = this;
   setTimeout(function() {
     _this.eggs = 4;
     done();
@@ -300,9 +291,9 @@ hooks.post('cook', function(obj) {
   obj.tofu = 'no';
 });
 
-var obj = { bacon: 0, eggs: 0 };
+const obj = { bacon: 0, eggs: 0 };
 
-var args = [obj];
+const args = [obj];
 args.push(function(error, result) {
   assert.ifError(error);
   assert.equal(null, error);
@@ -329,7 +320,7 @@ hooks.wrap(
 
 ## createWrapper()
 
-#### It wraps wrap() into a callable function
+### It wraps wrap() into a callable function
 
 ```javascript
 hooks.pre('cook', true, function(next, done) {
@@ -342,7 +333,7 @@ hooks.pre('cook', true, function(next, done) {
 
 hooks.pre('cook', true, function(next, done) {
   next();
-  var _this = this;
+  const _this = this;
   setTimeout(function() {
     _this.eggs = 4;
     done();
@@ -358,9 +349,9 @@ hooks.post('cook', function(obj) {
   obj.tofu = 'no';
 });
 
-var obj = { bacon: 0, eggs: 0 };
+const obj = { bacon: 0, eggs: 0 };
 
-var cook = hooks.createWrapper(
+const cook = hooks.createWrapper(
   'cook',
   function(o, callback) {
     assert.equal(3, obj.bacon);
@@ -384,34 +375,32 @@ cook(obj, function(error, result) {
 
 ## clone()
 
-acquit:ignore:end
-
-#### It clones a Kareem object
+### It clones a Kareem object
 
 ```javascript
-var k1 = new Kareem();
+const k1 = new Kareem();
 k1.pre('cook', function() {});
 k1.post('cook', function() {});
 
-var k2 = k1.clone();
+const k2 = k1.clone();
 assert.deepEqual(Array.from(k2._pres.keys()), ['cook']);
 assert.deepEqual(Array.from(k2._posts.keys()), ['cook']);
 ```
 
 ## merge()
 
-#### It pulls hooks from another Kareem object
+### It pulls hooks from another Kareem object
 
 ```javascript
-var k1 = new Kareem();
-var test1 = function() {};
+const k1 = new Kareem();
+const test1 = function() {};
 k1.pre('cook', test1);
 k1.post('cook', function() {});
 
-var k2 = new Kareem();
-var test2 = function() {};
+const k2 = new Kareem();
+const test2 = function() {};
 k2.pre('cook', test2);
-var k3 = k2.merge(k1);
+const k3 = k2.merge(k1);
 assert.equal(k3._pres.get('cook').length, 2);
 assert.equal(k3._pres.get('cook')[0].fn, test2);
 assert.equal(k3._pres.get('cook')[1].fn, test1);
