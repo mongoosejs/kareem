@@ -93,20 +93,15 @@ describe('execPost', function() {
       callback(new Error('fifth'));
     });
 
-    await assert.rejects(
-      () => hooks.execPost('cook', null, [4]),
-      error => {
-        assert.ok(error);
-        assert.equal(error.message, 'fifth');
-        assert.deepEqual(called, {
-          first: true,
-          second: true,
-          fourth: true,
-          fifth: true
-        });
-        return true;
-      }
-    );
+    const err = await hooks.execPost('cook', null, [4]).then(() => null, err => err);
+    assert.ok(err);
+    assert.equal(err.message, 'fifth');
+    assert.deepEqual(called, {
+      first: true,
+      second: true,
+      fourth: true,
+      fifth: true
+    });
   });
 
   it('error posts with errorHandler option', async function() {
@@ -130,18 +125,13 @@ describe('execPost', function() {
       return Promise.resolve();
     });
 
-    await assert.rejects(
-      () => hooks.execPost('cook', null, [4]),
-      error => {
-        assert.ok(error);
-        assert.deepEqual(called, {
-          first: true,
-          second: true,
-          fourth: true
-        });
-        return true;
-      }
-    );
+    const err = await hooks.execPost('cook', null, [4]).then(() => null, err => err);
+    assert.ok(err);
+    assert.deepEqual(called, {
+      first: true,
+      second: true,
+      fourth: true
+    });
   });
 
   it('error posts with initial error', async function() {
@@ -170,19 +160,14 @@ describe('execPost', function() {
     });
 
     const options = { error: new Error('fail') };
-    await assert.rejects(
-      () => hooks.execPost('cook', null, [4], options),
-      error => {
-        assert.ok(error);
-        assert.equal(error.message, 'third');
-        assert.deepEqual(called, {
-          second: true,
-          third: true,
-          fourth: true
-        });
-        return true;
-      }
-    );
+    const err = await hooks.execPost('cook', null, [4], options).then(() => null, err => err);
+    assert.ok(err);
+    assert.equal(err.message, 'third');
+    assert.deepEqual(called, {
+      second: true,
+      third: true,
+      fourth: true
+    });
   });
 
   it('supports returning a promise', async function() {

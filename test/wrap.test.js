@@ -363,20 +363,18 @@ describe('wrap()', function() {
 
     const args = [];
 
-    await assert.rejects(async() => {
-      await hooks.wrap(
-        'cook',
-        function() {
-          return;
-        },
-        obj,
-        args);
-    }, err => {
-      assert.equal(err.message, 'error!');
-      assert.equal(obj.waffles, false);
-      assert.equal(obj.tofu, 'no');
-      return true;
-    });
+    const err = await hooks.wrap(
+      'cook',
+      function() {
+        return;
+      },
+      obj,
+      args
+    ).then(() => null, err => err);
+
+    assert.equal(err.message, 'error!');
+    assert.equal(obj.waffles, false);
+    assert.equal(obj.tofu, 'no');
   });
 
   it('catches sync errors', async function() {
@@ -388,18 +386,16 @@ describe('wrap()', function() {
       callback();
     });
 
-    await assert.rejects(async() => {
-      await hooks.wrap(
-        'cook',
-        function() {
-          throw new Error('oops!');
-        },
-        null,
-        []);
-    }, err => {
-      assert.equal(err.message, 'oops!');
-      return true;
-    });
+    const err = await hooks.wrap(
+      'cook',
+      function() {
+        throw new Error('oops!');
+      },
+      null,
+      []
+    ).then(() => null, err => err);
+
+    assert.equal(err.message, 'oops!');
   });
 
   it('sync wrappers', function() {

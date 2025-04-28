@@ -28,8 +28,7 @@ Kareem.overwriteResult = function overwriteResult() {
  * Execute all "pre" hooks for "name"
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
- * @param {Array|Function} args Optional arguments or directly the callback
- * @param {Function} [callback] The callback to call when executing all hooks are finished
+ * @param {Array|Function} args arguments passed to the pre hooks
  * @returns {void}
  */
 Kareem.prototype.execPre = async function execPre(name, context, args) {
