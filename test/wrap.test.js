@@ -12,8 +12,8 @@ describe('wrap()', function() {
   });
 
   it('handles pre errors', async function() {
-    hooks.pre('cook', function(done) {
-      done('error!');
+    hooks.pre('cook', function () {
+      throw new Error('error!');
     });
 
     hooks.post('cook', function(obj) {
@@ -33,15 +33,15 @@ describe('wrap()', function() {
         obj,
         [obj]);
     }, err => {
-      assert.equal(err, 'error!');
+      assert.equal(err.message, 'error!');
       assert.equal(obj.tofu, undefined);
       return true;
     });
   });
 
   it('handles pre errors when no callback defined', async function() {
-    hooks.pre('cook', function(done) {
-      done('error!');
+    hooks.pre('cook', function () {
+      throw new Error('error!');
     });
 
     hooks.post('cook', function(obj) {
@@ -63,16 +63,14 @@ describe('wrap()', function() {
         obj,
         args);
     }, err => {
-      assert.equal(err, 'error!');
+      assert.equal(err.message, 'error!');
       assert.equal(obj.tofu, undefined);
       return true;
     });
   });
 
   it('handles errors in wrapped function', async function() {
-    hooks.pre('cook', function(done) {
-      done();
-    });
+    hooks.pre('cook', function() {});
 
     hooks.post('cook', function(obj) {
       obj.tofu = 'no';
@@ -98,9 +96,7 @@ describe('wrap()', function() {
   });
 
   it('handles errors in post', async function() {
-    hooks.pre('cook', function(done) {
-      done();
-    });
+    hooks.pre('cook', function() {});
 
     hooks.post('cook', function(obj, callback) {
       obj.tofu = 'no';
@@ -127,8 +123,8 @@ describe('wrap()', function() {
   });
 
   it('defers errors to post hooks if enabled', async function() {
-    hooks.pre('cook', function(done) {
-      done(new Error('fail'));
+    hooks.pre('cook', function() {
+      throw new Error('fail');
     });
 
     hooks.post('cook', function(error, res, callback) {
@@ -151,8 +147,8 @@ describe('wrap()', function() {
   });
 
   it('error handlers with no callback', async function() {
-    hooks.pre('cook', function(done) {
-      done(new Error('fail'));
+    hooks.pre('cook', function() {
+      throw new Error('fail');
     });
 
     hooks.postError('cook', function(error) {
@@ -188,9 +184,7 @@ describe('wrap()', function() {
   });
 
   it('works with no args', async function() {
-    hooks.pre('cook', function(done) {
-      done();
-    });
+    hooks.pre('cook', function() {});
 
     hooks.post('cook', function(res, callback) {
       obj.tofu = 'no';
@@ -213,8 +207,8 @@ describe('wrap()', function() {
   });
 
   it('handles pre errors with no args', async function() {
-    hooks.pre('cook', function(done) {
-      done(new Error('error!'));
+    hooks.pre('cook', function() {
+      throw new Error('error!');
     });
 
     hooks.post('cook', function(callback) {
@@ -242,9 +236,8 @@ describe('wrap()', function() {
   });
 
   it('handles wrapped function errors with no args', async function() {
-    hooks.pre('cook', function(done) {
+    hooks.pre('cook', function() {
       obj.waffles = false;
-      done();
     });
 
     hooks.post('cook', function(callback) {
@@ -290,9 +283,9 @@ describe('wrap()', function() {
 
   it('supports skipWrappedFunction', async function() {
     const execed = {};
-    hooks.pre('cook', function pre(callback) {
+    hooks.pre('cook', function pre() {
       execed.pre = true;
-      callback(Kareem.skipWrappedFunction(3));
+      throw Kareem.skipWrappedFunction(3);
     });
 
     hooks.post('cook', function(res, callback) {
@@ -317,11 +310,10 @@ describe('wrap()', function() {
 
   it('supports skipWrappedFunction with arguments', async function() {
     const execed = {};
-    hooks.pre('cook', function pre(callback, arg) {
+    hooks.pre('cook', function pre(arg) {
       execed.pre = true;
       assert.strictEqual(4, arg);
-
-      callback(Kareem.skipWrappedFunction(3));
+      throw Kareem.skipWrappedFunction(3);
     });
 
     hooks.post('cook', function(res, callback) {
@@ -349,9 +341,8 @@ describe('wrap()', function() {
   });
 
   it('handles post errors with no args', async function() {
-    hooks.pre('cook', function(done) {
+    hooks.pre('cook', function() {
       obj.waffles = false;
-      done();
     });
 
     hooks.post('cook', function(res, callback) {
@@ -378,13 +369,9 @@ describe('wrap()', function() {
   });
 
   it('catches sync errors', async function() {
-    hooks.pre('cook', function(done) {
-      done();
-    });
+    hooks.pre('cook', function() {});
 
-    hooks.post('cook', function(callback) {
-      callback();
-    });
+    hooks.post('cook', function() {});
 
     const err = await hooks.wrap(
       'cook',

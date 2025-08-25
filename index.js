@@ -41,52 +41,29 @@ Kareem.prototype.execPre = async function execPre(name, context, args) {
     return;
   }
 
-  const asyncPrePromises = [];
   for (const pre of pres) {
-    if (pre.fn.length > 0) {
-      let resolve = null;
-      let reject = null;
-      const cbPromise = new Promise((_resolve, _reject) => {
-        resolve = _resolve;
-        reject = _reject;
-      });
-      const args = [(err) => err ? reject(err) : resolve()];
-      const _args = [null].concat($args);
-      for (let i = 1; i < _args.length; ++i) {
-        if (i === _args.length - 1 && typeof _args[i] === 'function') {
-          continue; // skip callbacks to avoid accidentally calling the callback from a hook
-        }
-        args.push(_args[i]);
+    const args = [];
+    const _args = [null].concat($args);
+    for (let i = 1; i < _args.length; ++i) {
+      if (i === _args.length - 1 && typeof _args[i] === 'function') {
+        continue; // skip callbacks to avoid accidentally calling the callback from a hook
       }
+      args.push(_args[i]);
+    }
 
-      try {
-        const maybePromiseLike = pre.fn.apply(context, args);
-        if (isPromiseLike(maybePromiseLike)) {
-          await maybePromiseLike;
-        } else {
-          await cbPromise;
-        }
-      } catch (error) {
-        if (error instanceof Kareem.skipWrappedFunction) {
-          skipWrappedFunction = error;
-          continue;
-        }
-        throw error;
+    try {
+      const maybePromiseLike = pre.fn.apply(context, args);
+      if (isPromiseLike(maybePromiseLike)) {
+        await maybePromiseLike;
       }
-    } else {
-      try {
-        await pre.fn.call(context);
-      } catch (error) {
-        if (error instanceof Kareem.skipWrappedFunction) {
-          skipWrappedFunction = error;
-          continue;
-        }
-        throw error;
+    } catch (error) {
+      if (error instanceof Kareem.skipWrappedFunction) {
+        skipWrappedFunction = error;
+        continue;
       }
+      throw error;
     }
   }
-
-  await Promise.all(asyncPrePromises);
 
   if (skipWrappedFunction) {
     throw skipWrappedFunction;

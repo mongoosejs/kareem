@@ -14,19 +14,17 @@ describe('execPre', function() {
   it('handles errors with multiple pres', async function() {
     const execed = {};
 
-    hooks.pre('cook', function(done) {
+    hooks.pre('cook', async function() {
       execed.first = true;
-      done();
     });
 
-    hooks.pre('cook', function(done) {
+    hooks.pre('cook', async function() {
       execed.second = true;
-      done('error!');
+      throw new Error('error!');
     });
 
-    hooks.pre('cook', function(done) {
+    hooks.pre('cook', async function() {
       execed.third = true;
-      done();
     });
 
     await assert.rejects(hooks.execPre('cook', null), /error!/);
@@ -42,9 +40,8 @@ describe('execPre', function() {
       throw new Error('woops!');
     });
 
-    hooks.pre('cook', function(next) {
+    hooks.pre('cook', function() {
       ++called;
-      next();
     });
 
     await assert.rejects(hooks.execPre('cook', null), /woops!/);
@@ -94,8 +91,8 @@ describe('execPre', function() {
   it('supports skipWrappedFunction', async function() {
     const execed = {};
 
-    hooks.pre('cook', function(callback) {
-      callback(Kareem.skipWrappedFunction(42));
+    hooks.pre('cook', function() {
+      throw Kareem.skipWrappedFunction(42);
     });
 
     hooks.pre('cook', function() {
