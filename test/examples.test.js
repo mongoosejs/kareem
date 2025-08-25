@@ -99,42 +99,6 @@ describe('pre hooks', function() {
     assert.equal(4, obj.eggs);
   });
 
-  /* Like the hooks module, you can declare "async" pre hooks - these take two
-   * parameters, the functions `next()` and `done()`. `next()` passes control to
-   * the next pre hook, but the underlying function won't be called until all
-   * async pre hooks have called `done()`.
-   */
-  it('can execute parallel (async) pre hooks', async function() {
-    hooks.pre('cook', true, function(next, done) {
-      this.bacon = 3;
-      next();
-      setTimeout(function() {
-        done();
-      }, 5);
-    });
-
-    hooks.pre('cook', true, function(next, done) {
-      next();
-      const _this = this;
-      setTimeout(function() {
-        _this.eggs = 4;
-        done();
-      }, 10);
-    });
-
-    hooks.pre('cook', function(next) {
-      this.waffles = false;
-      next();
-    });
-
-    const obj = { bacon: 0, eggs: 0 };
-
-    await hooks.execPre('cook', obj);
-    assert.equal(3, obj.bacon);
-    assert.equal(4, obj.eggs);
-    assert.equal(false, obj.waffles);
-  });
-
   /* You can also return a promise from your pre hooks instead of calling
    * `next()`. When the returned promise resolves, kareem will kick off the
    * next middleware.
@@ -235,21 +199,16 @@ describe('wrap()', function() {
   });
 
   it('wraps pre and post calls into one call', async function() {
-    hooks.pre('cook', true, function(next, done) {
+    hooks.pre('cook', function(next) {
       this.bacon = 3;
-      next();
       setTimeout(function() {
-        done();
+        next();
       }, 5);
     });
 
-    hooks.pre('cook', true, function(next, done) {
+    hooks.pre('cook', function(next) {
+      this.eggs = 4;
       next();
-      const _this = this;
-      setTimeout(function() {
-        _this.eggs = 4;
-        done();
-      }, 10);
     });
 
     hooks.pre('cook', function(next) {
@@ -294,20 +253,15 @@ describe('createWrapper()', function() {
   });
 
   it('wraps wrap() into a callable function', async function() {
-    hooks.pre('cook', true, function(next, done) {
+    hooks.pre('cook', function(next) {
       this.bacon = 3;
       next();
-      setTimeout(function() {
-        done();
-      }, 5);
     });
 
-    hooks.pre('cook', true, function(next, done) {
-      next();
-      const _this = this;
+    hooks.pre('cook', function(next) {
+      this.eggs = 4;
       setTimeout(function() {
-        _this.eggs = 4;
-        done();
+        next();
       }, 10);
     });
 

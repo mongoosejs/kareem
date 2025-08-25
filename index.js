@@ -43,36 +43,7 @@ Kareem.prototype.execPre = async function execPre(name, context, args) {
 
   const asyncPrePromises = [];
   for (const pre of pres) {
-    if (pre.isAsync) {
-      let nextResolve = null;
-      let nextReject = null;
-      const nextPromise = new Promise((resolve, reject) => {
-        nextResolve = resolve;
-        nextReject = reject;
-      });
-      let doneResolve = null;
-      let doneReject = null;
-      const donePromise = new Promise((resolve, reject) => {
-        doneResolve = resolve;
-        doneReject = reject;
-      });
-      const args = [(err) => err ? nextReject(err) : nextResolve(), (err) => err ? doneReject(err) : doneResolve()];
-      const maybePromiseLike = pre.fn.apply(context, args);
-      try {
-        if (isPromiseLike(maybePromiseLike)) {
-          await maybePromiseLike;
-        } else {
-          await nextPromise;
-        }
-      } catch (error) {
-        if (error instanceof Kareem.skipWrappedFunction) {
-          skipWrappedFunction = error;
-          continue;
-        }
-        throw error;
-      }
-      asyncPrePromises.push(donePromise);
-    } else if (pre.fn.length > 0) {
+    if (pre.fn.length > 0) {
       let resolve = null;
       let reject = null;
       const cbPromise = new Promise((_resolve, _reject) => {
@@ -344,8 +315,6 @@ Kareem.prototype.filter = function(fn) {
       continue;
     }
 
-    hooks.numAsync = hooks.filter(h => h.isAsync).length;
-
     clone._pres.set(name, hooks);
   }
 
@@ -398,38 +367,31 @@ Kareem.prototype.createWrapper = function(name, fn, context, options) {
 /**
  * Register a new hook for "pre"
  * @param {String} name The name of the hook
- * @param {Boolean} [isAsync]
+ * @param {Object} [options]
  * @param {Function} fn The function to register for "name"
  * @param {never} error Unused
  * @param {Boolean} [unshift] Wheter to "push" or to "unshift" the new hook
  * @returns {Kareem}
  */
-Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
-  let options = {};
-  if (typeof isAsync === 'object' && isAsync !== null) {
-    options = isAsync;
-    isAsync = options.isAsync;
-  } else if (typeof arguments[1] !== 'boolean') {
-    fn = isAsync;
-    isAsync = false;
+Kareem.prototype.pre = function(name, options, fn, error, unshift) {
+  if (typeof options === 'function') {
+    fn = options;
+    options = {};
+  } else if (options == null) {
+    options = {};
   }
 
   const pres = this._pres.get(name) || [];
   this._pres.set(name, pres);
-
-  if (isAsync) {
-    pres.numAsync = pres.numAsync || 0;
-    ++pres.numAsync;
-  }
 
   if (typeof fn !== 'function') {
     throw new Error('pre() requires a function, got "' + typeof fn + '"');
   }
 
   if (unshift) {
-    pres.unshift(Object.assign({}, options, { fn: fn, isAsync: isAsync }));
+    pres.unshift(Object.assign({}, options, { fn: fn }));
   } else {
-    pres.push(Object.assign({}, options, { fn: fn, isAsync: isAsync }));
+    pres.push(Object.assign({}, options, { fn: fn }));
   }
 
   return this;
@@ -493,7 +455,6 @@ Kareem.prototype.clone = function() {
 
   for (const key of this._pres.keys()) {
     const clone = this._pres.get(key).slice();
-    clone.numAsync = this._pres.get(key).numAsync;
     n._pres.set(key, clone);
   }
   for (const key of this._posts.keys()) {
@@ -519,8 +480,6 @@ Kareem.prototype.merge = function(other, clone) {
       // Deduplicate based on `fn`
       filter(p => sourcePres.map(_p => _p.fn).indexOf(p.fn) === -1);
     const combined = sourcePres.concat(deduplicated);
-    combined.numAsync = sourcePres.numAsync || 0;
-    combined.numAsync += deduplicated.filter(p => p.isAsync).length;
     ret._pres.set(key, combined);
   }
   for (const key of other._posts.keys()) {
