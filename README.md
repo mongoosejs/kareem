@@ -5,7 +5,7 @@
 
 Re-imagined take on the [hooks](http://npmjs.org/package/hooks) module, meant to offer additional flexibility in allowing you to execute hooks whenever necessary, as opposed to simply wrapping a single function.
 
-Named for the NBA's all-time leading scorer Kareem Abdul-Jabbar, known for his mastery of the [hook shot](http://en.wikipedia.org/wiki/Kareem_Abdul-Jabbar#Skyhook)
+Named for the NBA's 2nd all-time leading scorer Kareem Abdul-Jabbar, known for his mastery of the [hook shot](http://en.wikipedia.org/wiki/Kareem_Abdul-Jabbar#Skyhook)
 
 <img src="http://upload.wikimedia.org/wikipedia/commons/0/00/Kareem-Abdul-Jabbar_Lipofsky.jpg" width="220">
 
