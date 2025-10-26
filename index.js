@@ -24,21 +24,29 @@ Kareem.overwriteResult = function overwriteResult() {
   this.args = [...arguments];
 };
 
+Kareem.overwriteArguments = function overwriteArguments() {
+  if (!(this instanceof Kareem.overwriteArguments)) {
+    return new Kareem.overwriteArguments(...arguments);
+  }
+
+  this.args = [...arguments];
+};
+
 /**
  * Execute all "pre" hooks for "name"
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
  * @param {Array|Function} args arguments passed to the pre hooks
- * @returns {void}
+ * @returns {Array} The potentially modified arguments
  */
 Kareem.prototype.execPre = async function execPre(name, context, args) {
   const pres = this._pres.get(name) || [];
   const numPres = pres.length;
-  const $args = args;
+  let $args = args;
   let skipWrappedFunction = null;
 
   if (!numPres) {
-    return;
+    return $args;
   }
 
   for (const pre of pres) {
@@ -54,11 +62,20 @@ Kareem.prototype.execPre = async function execPre(name, context, args) {
     try {
       const maybePromiseLike = pre.fn.apply(context, args);
       if (isPromiseLike(maybePromiseLike)) {
-        await maybePromiseLike;
+        const result = await maybePromiseLike;
+        if (result instanceof Kareem.overwriteArguments) {
+          $args = result.args;
+        }
+      } else if (maybePromiseLike instanceof Kareem.overwriteArguments) {
+        $args = maybePromiseLike.args;
       }
     } catch (error) {
       if (error instanceof Kareem.skipWrappedFunction) {
         skipWrappedFunction = error;
+        continue;
+      }
+      if (error instanceof Kareem.overwriteArguments) {
+        $args = error.args;
         continue;
       }
       throw error;
@@ -68,6 +85,8 @@ Kareem.prototype.execPre = async function execPre(name, context, args) {
   if (skipWrappedFunction) {
     throw skipWrappedFunction;
   }
+
+  return $args;
 };
 
 /**
@@ -75,15 +94,21 @@ Kareem.prototype.execPre = async function execPre(name, context, args) {
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
  * @param {Array} [args] Apply custom arguments to the hook
- * @returns {void}
+ * @returns {Array} The potentially modified arguments
  */
 Kareem.prototype.execPreSync = function(name, context, args) {
   const pres = this._pres.get(name) || [];
   const numPres = pres.length;
+  let $args = args || [];
 
   for (let i = 0; i < numPres; ++i) {
-    pres[i].fn.apply(context, args || []);
+    const result = pres[i].fn.apply(context, $args);
+    if (result instanceof Kareem.overwriteArguments) {
+      $args = result.args;
+    }
   }
+
+  return $args;
 };
 
 /**
@@ -231,9 +256,9 @@ Kareem.prototype.execPostSync = function(name, context, args) {
 Kareem.prototype.createWrapperSync = function(name, fn) {
   const _this = this;
   return function syncWrapper() {
-    _this.execPreSync(name, this, arguments);
+    const modifiedArgs = _this.execPreSync(name, this, Array.from(arguments));
 
-    const toReturn = fn.apply(this, arguments);
+    const toReturn = fn.apply(this, modifiedArgs);
 
     const result = _this.execPostSync(name, this, [toReturn]);
 
@@ -253,8 +278,9 @@ Kareem.prototype.createWrapperSync = function(name, fn) {
 Kareem.prototype.wrap = async function wrap(name, fn, context, args, options) {
   let ret;
   let skipWrappedFunction = false;
+  let modifiedArgs = args;
   try {
-    await this.execPre(name, context, args);
+    modifiedArgs = await this.execPre(name, context, args);
   } catch (error) {
     if (error instanceof Kareem.skipWrappedFunction) {
       ret = error.args;
@@ -265,7 +291,7 @@ Kareem.prototype.wrap = async function wrap(name, fn, context, args, options) {
   }
 
   if (!skipWrappedFunction) {
-    ret = await fn.apply(context, args);
+    ret = await fn.apply(context, modifiedArgs);
   }
 
   ret = await this.execPost(name, context, [ret], options);

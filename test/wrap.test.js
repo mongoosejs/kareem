@@ -418,4 +418,117 @@ describe('wrap()', function() {
 
     assert.strictEqual(wrapper(), 5);
   });
+
+  it('supports overwriteArguments in wrap()', async function() {
+    const execed = {};
+    hooks.pre('init', function(obj) {
+      execed.pre = true;
+      if (typeof obj === 'string') {
+        return Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    const result = await hooks.wrap(
+      'init',
+      function(obj) {
+        execed.wrapped = true;
+        assert.strictEqual(typeof obj, 'object');
+        assert.strictEqual(obj.name, 'test');
+        return obj;
+      },
+      null,
+      ['test']);
+
+    assert.ok(execed.pre);
+    assert.ok(execed.wrapped);
+    assert.deepStrictEqual(result, { name: 'test' });
+  });
+
+  it('supports overwriteArguments with throw in wrap()', async function() {
+    const execed = {};
+    hooks.pre('init', function(obj) {
+      execed.pre = true;
+      if (typeof obj === 'string') {
+        throw Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    const result = await hooks.wrap(
+      'init',
+      function(obj) {
+        execed.wrapped = true;
+        assert.strictEqual(typeof obj, 'object');
+        assert.strictEqual(obj.name, 'test');
+        return obj;
+      },
+      null,
+      ['test']);
+
+    assert.ok(execed.pre);
+    assert.ok(execed.wrapped);
+    assert.deepStrictEqual(result, { name: 'test' });
+  });
+
+  it('supports overwriteArguments with multiple pre hooks', async function() {
+    hooks.pre('init', function(obj) {
+      if (typeof obj === 'string') {
+        return Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    hooks.pre('init', function(obj) {
+      if (obj && typeof obj === 'object' && !obj.modified) {
+        return Kareem.overwriteArguments({ ...obj, modified: true });
+      }
+    });
+
+    const result = await hooks.wrap(
+      'init',
+      function(obj) {
+        assert.strictEqual(typeof obj, 'object');
+        assert.strictEqual(obj.name, 'test');
+        assert.strictEqual(obj.modified, true);
+        return obj;
+      },
+      null,
+      ['test']);
+
+    assert.deepStrictEqual(result, { name: 'test', modified: true });
+  });
+
+  it('supports overwriteArguments in sync wrappers', function() {
+    hooks.pre('cook', function(obj) {
+      if (typeof obj === 'string') {
+        return Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    const wrapper = hooks.createWrapperSync('cook', function(obj) {
+      assert.strictEqual(typeof obj, 'object');
+      assert.strictEqual(obj.name, 'hello');
+      return obj;
+    });
+
+    const result = wrapper('hello');
+    assert.deepStrictEqual(result, { name: 'hello' });
+  });
+
+  it('supports overwriteArguments with multiple arguments', async function() {
+    hooks.pre('process', function(a, b, c) {
+      return Kareem.overwriteArguments(a + 1, b + 2, c + 3);
+    });
+
+    const result = await hooks.wrap(
+      'process',
+      function(a, b, c) {
+        assert.strictEqual(a, 2);
+        assert.strictEqual(b, 4);
+        assert.strictEqual(c, 6);
+        return a + b + c;
+      },
+      null,
+      [1, 2, 3]);
+
+    assert.strictEqual(result, 12);
+  });
 });
