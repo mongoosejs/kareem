@@ -2,6 +2,7 @@ declare module "kareem" {
   export default class Kareem {
     static skipWrappedFunction(): SkipWrappedFunction;
     static overwriteMiddlewareResult(): OverwriteMiddlewareResult;
+    static overwriteArguments(): OverwriteArguments;
 
     pre(name: string | RegExp, fn: Function): this;
     pre(name: string | RegExp, options: Record<string, any>, fn: Function, error?: any, unshift?: boolean): this;
@@ -26,4 +27,5 @@ declare module "kareem" {
 
   class SkipWrappedFunction {}
   class OverwriteMiddlewareResult {}
+  class OverwriteArguments {}
 }
