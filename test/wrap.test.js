@@ -12,7 +12,7 @@ describe('wrap()', function() {
   });
 
   it('handles pre errors', async function() {
-    hooks.pre('cook', function () {
+    hooks.pre('cook', function() {
       throw new Error('error!');
     });
 
@@ -40,7 +40,7 @@ describe('wrap()', function() {
   });
 
   it('handles pre errors when no callback defined', async function() {
-    hooks.pre('cook', function () {
+    hooks.pre('cook', function() {
       throw new Error('error!');
     });
 
