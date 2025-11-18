@@ -24,15 +24,14 @@ describe('pre hooks', function() {
     await hooks.execPre('cook', null);
   });
 
-  /* pre hook functions take one parameter, a "done" function that you execute
-   * when your pre hook is finished.
+  /* pre hook functions can return a promise that resolves when finished.
    */
   it('runs basic serial pre hooks', async function() {
     let count = 0;
 
-    hooks.pre('cook', function(done) {
+    hooks.pre('cook', function() {
       ++count;
-      done();
+      return Promise.resolve();
     });
 
     await hooks.execPre('cook', null);
@@ -43,14 +42,14 @@ describe('pre hooks', function() {
     let count1 = 0;
     let count2 = 0;
 
-    hooks.pre('cook', function(done) {
+    hooks.pre('cook', function() {
       ++count1;
-      done();
+      return Promise.resolve();
     });
 
-    hooks.pre('cook', function(done) {
+    hooks.pre('cook', function() {
       ++count2;
-      done();
+      return Promise.resolve();
     });
 
     await hooks.execPre('cook', null);
@@ -81,14 +80,12 @@ describe('pre hooks', function() {
   /* Pre save hook functions are bound to the second parameter to `execPre()`
    */
   it('properly attaches context to pre hooks', async function() {
-    hooks.pre('cook', function(done) {
+    hooks.pre('cook', function() {
       this.bacon = 3;
-      done();
     });
 
-    hooks.pre('cook', function(done) {
+    hooks.pre('cook', function() {
       this.eggs = 4;
-      done();
     });
 
     const obj = { bacon: 0, eggs: 0 };
@@ -97,42 +94,6 @@ describe('pre hooks', function() {
     await hooks.execPre('cook', obj);
     assert.equal(3, obj.bacon);
     assert.equal(4, obj.eggs);
-  });
-
-  /* Like the hooks module, you can declare "async" pre hooks - these take two
-   * parameters, the functions `next()` and `done()`. `next()` passes control to
-   * the next pre hook, but the underlying function won't be called until all
-   * async pre hooks have called `done()`.
-   */
-  it('can execute parallel (async) pre hooks', async function() {
-    hooks.pre('cook', true, function(next, done) {
-      this.bacon = 3;
-      next();
-      setTimeout(function() {
-        done();
-      }, 5);
-    });
-
-    hooks.pre('cook', true, function(next, done) {
-      next();
-      const _this = this;
-      setTimeout(function() {
-        _this.eggs = 4;
-        done();
-      }, 10);
-    });
-
-    hooks.pre('cook', function(next) {
-      this.waffles = false;
-      next();
-    });
-
-    const obj = { bacon: 0, eggs: 0 };
-
-    await hooks.execPre('cook', obj);
-    assert.equal(3, obj.bacon);
-    assert.equal(4, obj.eggs);
-    assert.equal(false, obj.waffles);
   });
 
   /* You can also return a promise from your pre hooks instead of calling
@@ -235,26 +196,23 @@ describe('wrap()', function() {
   });
 
   it('wraps pre and post calls into one call', async function() {
-    hooks.pre('cook', true, function(next, done) {
-      this.bacon = 3;
-      next();
-      setTimeout(function() {
-        done();
-      }, 5);
+    hooks.pre('cook', function() {
+      return new Promise(resolve => {
+        this.bacon = 3;
+        setTimeout(() => {
+          resolve();
+        }, 5);
+      });
     });
 
-    hooks.pre('cook', true, function(next, done) {
-      next();
-      const _this = this;
-      setTimeout(function() {
-        _this.eggs = 4;
-        done();
-      }, 10);
+    hooks.pre('cook', function() {
+      this.eggs = 4;
+      return Promise.resolve();
     });
 
-    hooks.pre('cook', function(next) {
+    hooks.pre('cook', function() {
       this.waffles = false;
-      next();
+      return Promise.resolve();
     });
 
     hooks.post('cook', function(obj) {
@@ -294,26 +252,23 @@ describe('createWrapper()', function() {
   });
 
   it('wraps wrap() into a callable function', async function() {
-    hooks.pre('cook', true, function(next, done) {
+    hooks.pre('cook', function() {
       this.bacon = 3;
-      next();
-      setTimeout(function() {
-        done();
-      }, 5);
+      return Promise.resolve();
     });
 
-    hooks.pre('cook', true, function(next, done) {
-      next();
-      const _this = this;
-      setTimeout(function() {
-        _this.eggs = 4;
-        done();
-      }, 10);
+    hooks.pre('cook', function() {
+      return new Promise(resolve => {
+        this.eggs = 4;
+        setTimeout(function() {
+          resolve();
+        }, 10);
+      });
     });
 
-    hooks.pre('cook', function(next) {
+    hooks.pre('cook', function() {
       this.waffles = false;
-      next();
+      return Promise.resolve();
     });
 
     hooks.post('cook', function(obj) {

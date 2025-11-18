@@ -14,19 +14,17 @@ describe('execPre', function() {
   it('handles errors with multiple pres', async function() {
     const execed = {};
 
-    hooks.pre('cook', function(done) {
+    hooks.pre('cook', async function() {
       execed.first = true;
-      done();
     });
 
-    hooks.pre('cook', function(done) {
+    hooks.pre('cook', async function() {
       execed.second = true;
-      done('error!');
+      throw new Error('error!');
     });
 
-    hooks.pre('cook', function(done) {
+    hooks.pre('cook', async function() {
       execed.third = true;
-      done();
     });
 
     await assert.rejects(hooks.execPre('cook', null), /error!/);
@@ -42,9 +40,8 @@ describe('execPre', function() {
       throw new Error('woops!');
     });
 
-    hooks.pre('cook', function(next) {
+    hooks.pre('cook', function() {
       ++called;
-      next();
     });
 
     await assert.rejects(hooks.execPre('cook', null), /woops!/);
@@ -73,173 +70,6 @@ describe('execPre', function() {
     assert.equal(hooks._pres.get('cook')[0].bar, 'baz');
   });
 
-  it('handles async errors', async function() {
-    const execed = {};
-
-    hooks.pre('cook', true, function(next, done) {
-      execed.first = true;
-      setTimeout(
-        function() {
-          done('error!');
-        },
-        5);
-
-      next();
-    });
-
-    hooks.pre('cook', true, function(next, done) {
-      execed.second = true;
-      setTimeout(
-        function() {
-          done('other error!');
-        },
-        10);
-
-      next();
-    });
-
-    const err = await hooks.execPre('cook', null).then(() => null, err => err);
-    assert.equal('error!', err);
-    assert.equal(2, Object.keys(execed).length);
-    assert.ok(execed.first);
-    assert.ok(execed.second);
-  });
-
-  it('handles async errors in next()', async function() {
-    const execed = {};
-
-    hooks.pre('cook', true, function(next, done) {
-      execed.first = true;
-      setTimeout(
-        function() {
-          done('other error!');
-        },
-        15);
-
-      next();
-    });
-
-    hooks.pre('cook', true, function(next, done) {
-      execed.second = true;
-      setTimeout(
-        function() {
-          next('error!');
-          done('another error!');
-        },
-        5);
-    });
-
-    const err = await hooks.execPre('cook', null).then(() => null, err => err);
-    assert.equal('error!', err);
-    assert.equal(2, Object.keys(execed).length);
-    assert.ok(execed.first);
-    assert.ok(execed.second);
-  });
-
-  it('handles async errors in next() when already done', async function() {
-    const execed = {};
-
-    hooks.pre('cook', true, function(next, done) {
-      execed.first = true;
-      setTimeout(
-        function() {
-          done('other error!');
-        },
-        5);
-
-      next();
-    });
-
-    hooks.pre('cook', true, function(next, done) {
-      execed.second = true;
-      setTimeout(
-        function() {
-          next();
-          done('another error!');
-        },
-        25);
-    });
-
-    const err = await hooks.execPre('cook', null).then(() => null, err => err);
-    assert.equal('other error!', err);
-    assert.equal(2, Object.keys(execed).length);
-    assert.ok(execed.first);
-    assert.ok(execed.second);
-  });
-
-  it('async pres with clone()', async function() {
-    let execed = false;
-
-    hooks.pre('cook', true, function(next, done) {
-      execed = true;
-      setTimeout(
-        function() {
-          done();
-        },
-        5);
-
-      next();
-    });
-
-    await hooks.clone().execPre('cook', null);
-    assert.ok(execed);
-  });
-
-  it('returns correct error when async pre errors', async function() {
-    const execed = {};
-
-    hooks.pre('cook', true, function(next, done) {
-      execed.first = true;
-      setTimeout(
-        function() {
-          done('other error!');
-        },
-        5);
-
-      next();
-    });
-
-    hooks.pre('cook', function(next) {
-      execed.second = true;
-      setTimeout(
-        function() {
-          next('error!');
-        },
-        15);
-    });
-
-    const err = await hooks.execPre('cook', null).then(() => null, err => err);
-    // In kareem@3.x, `next()` errors take precedence over `done()` errors
-    assert.equal('error!', err);
-    assert.equal(2, Object.keys(execed).length);
-    assert.ok(execed.first);
-    assert.ok(execed.second);
-  });
-
-  it('lets async pres run when fully sync pres are done', async function() {
-    const execed = {};
-
-    hooks.pre('cook', true, function(next, done) {
-      execed.first = true;
-      setTimeout(
-        function() {
-          done();
-        },
-        5);
-
-      next();
-    });
-
-    hooks.pre('cook', function() {
-      execed.second = true;
-    });
-
-    await hooks.execPre('cook', null);
-    assert.equal(2, Object.keys(execed).length);
-    assert.ok(execed.first);
-    assert.ok(execed.second);
-  });
-
   it('handles sync errors in pre if there are more hooks', async function() {
     const execed = {};
 
@@ -261,8 +91,8 @@ describe('execPre', function() {
   it('supports skipWrappedFunction', async function() {
     const execed = {};
 
-    hooks.pre('cook', function(callback) {
-      callback(Kareem.skipWrappedFunction(42));
+    hooks.pre('cook', function() {
+      throw Kareem.skipWrappedFunction(42);
     });
 
     hooks.pre('cook', function() {
@@ -272,6 +102,63 @@ describe('execPre', function() {
     const err = await hooks.execPre('cook', null).then(() => null, err => err);
     assert.ok(execed.second);
     assert.ok(err instanceof Kareem.skipWrappedFunction);
+  });
+
+  it('supports overwriteArguments with return', async function() {
+    hooks.pre('init', function(obj) {
+      if (typeof obj === 'string') {
+        return Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    const args = await hooks.execPre('init', null, ['test']);
+    assert.strictEqual(args.length, 1);
+    assert.strictEqual(typeof args[0], 'object');
+    assert.strictEqual(args[0].name, 'test');
+  });
+
+  it('supports overwriteArguments with throw', async function() {
+    hooks.pre('init', function(obj) {
+      if (typeof obj === 'string') {
+        throw Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    const args = await hooks.execPre('init', null, ['test']);
+    assert.strictEqual(args.length, 1);
+    assert.strictEqual(typeof args[0], 'object');
+    assert.strictEqual(args[0].name, 'test');
+  });
+
+  it('supports overwriteArguments with multiple hooks', async function() {
+    hooks.pre('init', function(obj) {
+      if (typeof obj === 'string') {
+        return Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    hooks.pre('init', function(obj) {
+      if (obj && typeof obj === 'object' && !obj.modified) {
+        return Kareem.overwriteArguments({ ...obj, modified: true });
+      }
+    });
+
+    const args = await hooks.execPre('init', null, ['test']);
+    assert.strictEqual(args.length, 1);
+    assert.deepStrictEqual(args[0], { name: 'test', modified: true });
+  });
+
+  it('supports overwriteArguments with async functions', async function() {
+    hooks.pre('init', async function(obj) {
+      if (typeof obj === 'string') {
+        return Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    const args = await hooks.execPre('init', null, ['async-test']);
+    assert.strictEqual(args.length, 1);
+    assert.strictEqual(typeof args[0], 'object');
+    assert.strictEqual(args[0].name, 'async-test');
   });
 });
 
@@ -302,5 +189,36 @@ describe('execPreSync', function() {
     assert.doesNotThrow(function() {
       hooks.execPreSync('cook', null);
     });
+  });
+
+  it('supports overwriteArguments', function() {
+    hooks.pre('init', function(obj) {
+      if (typeof obj === 'string') {
+        return Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    const args = hooks.execPreSync('init', null, ['test']);
+    assert.strictEqual(args.length, 1);
+    assert.strictEqual(typeof args[0], 'object');
+    assert.strictEqual(args[0].name, 'test');
+  });
+
+  it('supports overwriteArguments with multiple hooks', function() {
+    hooks.pre('init', function(obj) {
+      if (typeof obj === 'string') {
+        return Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    hooks.pre('init', function(obj) {
+      if (obj && typeof obj === 'object' && !obj.modified) {
+        return Kareem.overwriteArguments({ ...obj, modified: true });
+      }
+    });
+
+    const args = hooks.execPreSync('init', null, ['test']);
+    assert.strictEqual(args.length, 1);
+    assert.deepStrictEqual(args[0], { name: 'test', modified: true });
   });
 });
