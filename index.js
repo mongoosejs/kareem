@@ -24,102 +24,69 @@ Kareem.overwriteResult = function overwriteResult() {
   this.args = [...arguments];
 };
 
+Kareem.overwriteArguments = function overwriteArguments() {
+  if (!(this instanceof Kareem.overwriteArguments)) {
+    return new Kareem.overwriteArguments(...arguments);
+  }
+
+  this.args = [...arguments];
+};
+
 /**
  * Execute all "pre" hooks for "name"
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
  * @param {Array} args arguments passed to the pre hooks
- * @returns {void}
+ * @returns {Array} The potentially modified arguments
  */
 Kareem.prototype.execPre = async function execPre(name, context, args) {
   const pres = this._pres.get(name) || [];
   const numPres = pres.length;
-  const $args = args;
+  let $args = args;
   let skipWrappedFunction = null;
 
   if (!numPres) {
-    return;
+    return $args;
   }
 
-  const asyncPrePromises = [];
   for (const pre of pres) {
-    if (pre.isAsync) {
-      let nextResolve = null;
-      let nextReject = null;
-      const nextPromise = new Promise((resolve, reject) => {
-        nextResolve = resolve;
-        nextReject = reject;
-      });
-      let doneResolve = null;
-      let doneReject = null;
-      const donePromise = new Promise((resolve, reject) => {
-        doneResolve = resolve;
-        doneReject = reject;
-      });
-      const args = [(err) => err ? nextReject(err) : nextResolve(), (err) => err ? doneReject(err) : doneResolve()];
-      const maybePromiseLike = pre.fn.apply(context, args);
-      try {
-        if (isPromiseLike(maybePromiseLike)) {
-          await maybePromiseLike;
-        } else {
-          await nextPromise;
-        }
-      } catch (error) {
-        if (error instanceof Kareem.skipWrappedFunction) {
-          skipWrappedFunction = error;
-          continue;
-        }
-        throw error;
+    const args = [];
+    const _args = [null].concat($args);
+    for (let i = 1; i < _args.length; ++i) {
+      if (i === _args.length - 1 && typeof _args[i] === 'function') {
+        continue; // skip callbacks to avoid accidentally calling the callback from a hook
       }
-      asyncPrePromises.push(donePromise);
-    } else if (pre.fn.length > 0) {
-      let resolve = null;
-      let reject = null;
-      const cbPromise = new Promise((_resolve, _reject) => {
-        resolve = _resolve;
-        reject = _reject;
-      });
-      const args = [(err) => err ? reject(err) : resolve()];
-      const _args = [null].concat($args);
-      for (let i = 1; i < _args.length; ++i) {
-        if (i === _args.length - 1 && typeof _args[i] === 'function') {
-          continue; // skip callbacks to avoid accidentally calling the callback from a hook
-        }
-        args.push(_args[i]);
-      }
+      args.push(_args[i]);
+    }
 
-      try {
-        const maybePromiseLike = pre.fn.apply(context, args);
-        if (isPromiseLike(maybePromiseLike)) {
-          await maybePromiseLike;
-        } else {
-          await cbPromise;
+    try {
+      const maybePromiseLike = pre.fn.apply(context, args);
+      if (isPromiseLike(maybePromiseLike)) {
+        const result = await maybePromiseLike;
+        if (result instanceof Kareem.overwriteArguments) {
+          $args = result.args;
         }
-      } catch (error) {
-        if (error instanceof Kareem.skipWrappedFunction) {
-          skipWrappedFunction = error;
-          continue;
-        }
-        throw error;
+      } else if (maybePromiseLike instanceof Kareem.overwriteArguments) {
+        $args = maybePromiseLike.args;
       }
-    } else {
-      try {
-        await pre.fn.call(context);
-      } catch (error) {
-        if (error instanceof Kareem.skipWrappedFunction) {
-          skipWrappedFunction = error;
-          continue;
-        }
-        throw error;
+    } catch (error) {
+      if (error instanceof Kareem.skipWrappedFunction) {
+        skipWrappedFunction = error;
+        continue;
       }
+      if (error instanceof Kareem.overwriteArguments) {
+        $args = error.args;
+        continue;
+      }
+      throw error;
     }
   }
-
-  await Promise.all(asyncPrePromises);
 
   if (skipWrappedFunction) {
     throw skipWrappedFunction;
   }
+
+  return $args;
 };
 
 /**
@@ -127,15 +94,21 @@ Kareem.prototype.execPre = async function execPre(name, context, args) {
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
  * @param {Array} [args] Apply custom arguments to the hook
- * @returns {void}
+ * @returns {Array} The potentially modified arguments
  */
 Kareem.prototype.execPreSync = function(name, context, args) {
   const pres = this._pres.get(name) || [];
   const numPres = pres.length;
+  let $args = args || [];
 
   for (let i = 0; i < numPres; ++i) {
-    pres[i].fn.apply(context, args || []);
+    const result = pres[i].fn.apply(context, $args);
+    if (result instanceof Kareem.overwriteArguments) {
+      $args = result.args;
+    }
   }
+
+  return $args;
 };
 
 /**
@@ -283,9 +256,9 @@ Kareem.prototype.execPostSync = function(name, context, args) {
 Kareem.prototype.createWrapperSync = function(name, fn) {
   const _this = this;
   return function syncWrapper() {
-    _this.execPreSync(name, this, arguments);
+    const modifiedArgs = _this.execPreSync(name, this, Array.from(arguments));
 
-    const toReturn = fn.apply(this, arguments);
+    const toReturn = fn.apply(this, modifiedArgs);
 
     const result = _this.execPostSync(name, this, [toReturn]);
 
@@ -305,8 +278,9 @@ Kareem.prototype.createWrapperSync = function(name, fn) {
 Kareem.prototype.wrap = async function wrap(name, fn, context, args, options) {
   let ret;
   let skipWrappedFunction = false;
+  let modifiedArgs = args;
   try {
-    await this.execPre(name, context, args);
+    modifiedArgs = await this.execPre(name, context, args);
   } catch (error) {
     if (error instanceof Kareem.skipWrappedFunction) {
       ret = error.args;
@@ -317,7 +291,7 @@ Kareem.prototype.wrap = async function wrap(name, fn, context, args, options) {
   }
 
   if (!skipWrappedFunction) {
-    ret = await fn.apply(context, args);
+    ret = await fn.apply(context, modifiedArgs);
   }
 
   ret = await this.execPost(name, context, [ret], options);
@@ -343,8 +317,6 @@ Kareem.prototype.filter = function(fn) {
       clone._pres.delete(name);
       continue;
     }
-
-    hooks.numAsync = hooks.filter(h => h.isAsync).length;
 
     clone._pres.set(name, hooks);
   }
@@ -398,38 +370,31 @@ Kareem.prototype.createWrapper = function(name, fn, context, options) {
 /**
  * Register a new hook for "pre"
  * @param {String} name The name of the hook
- * @param {Boolean} [isAsync]
+ * @param {Object} [options]
  * @param {Function} fn The function to register for "name"
  * @param {never} error Unused
  * @param {Boolean} [unshift] Wheter to "push" or to "unshift" the new hook
  * @returns {Kareem}
  */
-Kareem.prototype.pre = function(name, isAsync, fn, error, unshift) {
-  let options = {};
-  if (typeof isAsync === 'object' && isAsync !== null) {
-    options = isAsync;
-    isAsync = options.isAsync;
-  } else if (typeof arguments[1] !== 'boolean') {
-    fn = isAsync;
-    isAsync = false;
+Kareem.prototype.pre = function(name, options, fn, error, unshift) {
+  if (typeof options === 'function') {
+    fn = options;
+    options = {};
+  } else if (options == null) {
+    options = {};
   }
 
   const pres = this._pres.get(name) || [];
   this._pres.set(name, pres);
-
-  if (isAsync) {
-    pres.numAsync = pres.numAsync || 0;
-    ++pres.numAsync;
-  }
 
   if (typeof fn !== 'function') {
     throw new Error('pre() requires a function, got "' + typeof fn + '"');
   }
 
   if (unshift) {
-    pres.unshift(Object.assign({}, options, { fn: fn, isAsync: isAsync }));
+    pres.unshift(Object.assign({}, options, { fn: fn }));
   } else {
-    pres.push(Object.assign({}, options, { fn: fn, isAsync: isAsync }));
+    pres.push(Object.assign({}, options, { fn: fn }));
   }
 
   return this;
@@ -493,7 +458,6 @@ Kareem.prototype.clone = function() {
 
   for (const key of this._pres.keys()) {
     const clone = this._pres.get(key).slice();
-    clone.numAsync = this._pres.get(key).numAsync;
     n._pres.set(key, clone);
   }
   for (const key of this._posts.keys()) {
@@ -519,8 +483,6 @@ Kareem.prototype.merge = function(other, clone) {
       // Deduplicate based on `fn`
       filter(p => sourcePres.map(_p => _p.fn).indexOf(p.fn) === -1);
     const combined = sourcePres.concat(deduplicated);
-    combined.numAsync = sourcePres.numAsync || 0;
-    combined.numAsync += deduplicated.filter(p => p.isAsync).length;
     ret._pres.set(key, combined);
   }
   for (const key of other._posts.keys()) {
