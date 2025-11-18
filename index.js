@@ -28,7 +28,7 @@ Kareem.overwriteResult = function overwriteResult() {
  * Execute all "pre" hooks for "name"
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
- * @param {Array|Function} args arguments passed to the pre hooks
+ * @param {Array} args arguments passed to the pre hooks
  * @returns {void}
  */
 Kareem.prototype.execPre = async function execPre(name, context, args) {
@@ -142,7 +142,7 @@ Kareem.prototype.execPreSync = function(name, context, args) {
  * Execute all "post" hooks for "name"
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
- * @param {Array|Function} args Apply custom arguments to the hook
+ * @param {Array} args Apply custom arguments to the hook
  * @param {*} options Optional options or directly the callback
  * @returns {void}
  */
@@ -257,7 +257,7 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
  * Execute all "post" hooks for "name" synchronously
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
- * @param {Array|Function} args Apply custom arguments to the hook
+ * @param {Array} args Apply custom arguments to the hook
  * @returns {Array} The used arguments
  */
 Kareem.prototype.execPostSync = function(name, context, args) {
