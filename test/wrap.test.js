@@ -11,7 +11,35 @@ describe('wrap()', function() {
     hooks = new Kareem();
   });
 
-  it('handles pre errors', function(done) {
+  it('handles pre errors', async function() {
+    hooks.pre('cook', function(done) {
+      done('error!');
+    });
+
+    hooks.post('cook', function(obj) {
+      obj.tofu = 'no';
+    });
+
+    const obj = { bacon: 0, eggs: 0 };
+
+    await assert.rejects(async() => {
+      await hooks.wrap(
+        'cook',
+        function(o) {
+          // Should never get called
+          assert.ok(false);
+          return o;
+        },
+        obj,
+        [obj]);
+    }, err => {
+      assert.equal(err, 'error!');
+      assert.equal(obj.tofu, undefined);
+      return true;
+    });
+  });
+
+  it('handles pre errors when no callback defined', async function() {
     hooks.pre('cook', function(done) {
       done('error!');
     });
@@ -23,55 +51,25 @@ describe('wrap()', function() {
     const obj = { bacon: 0, eggs: 0 };
 
     const args = [obj];
-    args.push(function(error, result) {
-      assert.equal('error!', error);
-      assert.ok(!result);
-      assert.equal(undefined, obj.tofu);
-      done();
-    });
 
-    hooks.wrap(
-      'cook',
-      function(o, callback) {
-        // Should never get called
-        assert.ok(false);
-        callback(null, o);
-      },
-      obj,
-      args);
+    await assert.rejects(async() => {
+      await hooks.wrap(
+        'cook',
+        function(o) {
+          // Should never get called
+          assert.ok(false);
+          return o;
+        },
+        obj,
+        args);
+    }, err => {
+      assert.equal(err, 'error!');
+      assert.equal(obj.tofu, undefined);
+      return true;
+    });
   });
 
-  it('handles pre errors when no callback defined', function(done) {
-    hooks.pre('cook', function(done) {
-      done('error!');
-    });
-
-    hooks.post('cook', function(obj) {
-      obj.tofu = 'no';
-    });
-
-    const obj = { bacon: 0, eggs: 0 };
-
-    const args = [obj];
-
-    hooks.wrap(
-      'cook',
-      function(o, callback) {
-        // Should never get called
-        assert.ok(false);
-        callback(null, o);
-      },
-      obj,
-      args);
-
-    setTimeout(
-      function() {
-        done();
-      },
-      25);
-  });
-
-  it('handles errors in wrapped function', function(done) {
+  it('handles errors in wrapped function', async function() {
     hooks.pre('cook', function(done) {
       done();
     });
@@ -83,52 +81,52 @@ describe('wrap()', function() {
     const obj = { bacon: 0, eggs: 0 };
 
     const args = [obj];
-    args.push(function(error, result) {
-      assert.equal('error!', error);
-      assert.ok(!result);
-      assert.equal(undefined, obj.tofu);
-      done();
-    });
 
-    hooks.wrap(
-      'cook',
-      function(o, callback) {
-        callback('error!');
-      },
-      obj,
-      args);
+    await assert.rejects(async() => {
+      await hooks.wrap(
+        'cook',
+        function() {
+          throw new Error('error!');
+        },
+        obj,
+        args);
+    }, err => {
+      assert.equal(err.message, 'error!');
+      assert.equal(obj.tofu, undefined);
+      return true;
+    });
   });
 
-  it('handles errors in post', function(done) {
+  it('handles errors in post', async function() {
     hooks.pre('cook', function(done) {
       done();
     });
 
     hooks.post('cook', function(obj, callback) {
       obj.tofu = 'no';
-      callback('error!');
+      callback(new Error('error!'));
     });
 
     const obj = { bacon: 0, eggs: 0 };
 
     const args = [obj];
-    args.push(function(error, result) {
-      assert.equal('error!', error);
-      assert.ok(!result);
-      assert.equal('no', obj.tofu);
-      done();
-    });
 
-    hooks.wrap(
-      'cook',
-      function(o, callback) {
-        callback(null, o);
-      },
-      obj,
-      args);
+    await assert.rejects(async() => {
+      await hooks.wrap(
+        'cook',
+        function(o) {
+          return o;
+        },
+        obj,
+        args);
+    }, err => {
+      assert.equal(err.message, 'error!');
+      assert.equal(obj.tofu, 'no');
+      return true;
+    });
   });
 
-  it('defers errors to post hooks if enabled', function(done) {
+  it('defers errors to post hooks if enabled', async function() {
     hooks.pre('cook', function(done) {
       done(new Error('fail'));
     });
@@ -137,74 +135,64 @@ describe('wrap()', function() {
       callback(new Error('another error occurred'));
     });
 
-    const args = [];
-    args.push(function(error) {
-      assert.equal(error.message, 'another error occurred');
-      done();
+    await assert.rejects(async() => {
+      await hooks.wrap(
+        'cook',
+        function() {
+          assert.ok(false);
+        },
+        null,
+        [],
+        { numCallbackParams: 1 });
+    }, err => {
+      assert.equal(err.message, 'another error occurred');
+      return true;
     });
-
-    hooks.wrap(
-      'cook',
-      function(callback) {
-        assert.ok(false);
-        callback();
-      },
-      null,
-      args,
-      { useErrorHandlers: true, numCallbackParams: 1 });
   });
 
-  it('error handlers with no callback', function(done) {
+  it('error handlers with no callback', async function() {
     hooks.pre('cook', function(done) {
       done(new Error('fail'));
     });
 
-    // unused parameter "_callback", but required for this to work at runtime
-    hooks.post('cook', function(error, _callback) {
+    hooks.postError('cook', function(error) {
       assert.equal(error.message, 'fail');
-      done();
     });
 
     const args = [];
 
-    hooks.wrap(
-      'cook',
-      function(callback) {
-        assert.ok(false);
-        callback();
-      },
-      null,
-      args,
-      { useErrorHandlers: true });
+    await assert.rejects(async() => {
+      await hooks.wrap(
+        'cook',
+        function() {
+          assert.ok(false);
+        },
+        null,
+        args);
+    }, /fail/);
   });
 
-  it('error handlers with no error', function(done) {
-    hooks.post('cook', function(error, callback) {
+  it('error handlers do not execute with no error', async function() {
+    hooks.post('cook', function(error, res, callback) {
       callback(new Error('another error occurred'));
     });
 
-    const args = [];
-    args.push(function(error) {
-      assert.ifError(error);
-      done();
-    });
-
-    hooks.wrap(
+    await hooks.wrap(
       'cook',
-      function(callback) {
-        callback();
+      async function() {
+        return;
       },
       null,
-      args,
-      { useErrorHandlers: true });
+      []
+    );
   });
 
-  it('works with no args', function(done) {
+  it('works with no args', async function() {
     hooks.pre('cook', function(done) {
       done();
     });
 
-    hooks.post('cook', function(callback) {
+    hooks.post('cook', function(res, callback) {
       obj.tofu = 'no';
       callback();
     });
@@ -213,25 +201,20 @@ describe('wrap()', function() {
 
     const args = [];
 
-    hooks.wrap(
+    await hooks.wrap(
       'cook',
-      function(callback) {
-        callback(null);
+      async function() {
+        return null;
       },
       obj,
       args);
 
-    setTimeout(
-      function() {
-        assert.equal('no', obj.tofu);
-        done();
-      },
-      25);
+    assert.equal(obj.tofu, 'no');
   });
 
-  it('handles pre errors with no args', function(done) {
+  it('handles pre errors with no args', async function() {
     hooks.pre('cook', function(done) {
-      done('error!');
+      done(new Error('error!'));
     });
 
     hooks.post('cook', function(callback) {
@@ -243,23 +226,22 @@ describe('wrap()', function() {
 
     const args = [];
 
-    hooks.wrap(
-      'cook',
-      function(callback) {
-        callback(null);
-      },
-      obj,
-      args);
-
-    setTimeout(
-      function() {
-        assert.equal(undefined, obj.tofu);
-        done();
-      },
-      25);
+    await assert.rejects(async() => {
+      await hooks.wrap(
+        'cook',
+        function() {
+          return null;
+        },
+        obj,
+        args);
+    }, err => {
+      assert.equal(err.message, 'error!');
+      assert.equal(obj.tofu, undefined);
+      return true;
+    });
   });
 
-  it('handles wrapped function errors with no args', function(done) {
+  it('handles wrapped function errors with no args', async function() {
     hooks.pre('cook', function(done) {
       obj.waffles = false;
       done();
@@ -274,44 +256,39 @@ describe('wrap()', function() {
 
     const args = [];
 
-    hooks.wrap(
-      'cook',
-      function(callback) {
-        callback('error!');
-      },
-      obj,
-      args);
-
-    setTimeout(
-      function() {
-        assert.equal(false, obj.waffles);
-        assert.equal(undefined, obj.tofu);
-        done();
-      },
-      25);
+    await assert.rejects(async() => {
+      await hooks.wrap(
+        'cook',
+        function() {
+          throw new Error('error!');
+        },
+        obj,
+        args);
+    }, err => {
+      assert.equal(err.message, 'error!');
+      assert.equal(obj.waffles, false);
+      assert.equal(obj.tofu, undefined);
+      return true;
+    });
   });
 
-  it('supports overwriteResult', function(done) {
-    hooks.post('cook', function(eggs, callback) {
+  it('supports overwriteResult', async function() {
+    hooks.post('cook', function(res, callback) {
       callback(Kareem.overwriteResult(5));
     });
 
-    const args = [(err, res) => {
-      assert.ifError(err);
-      assert.equal(res, 5);
-      done();
-    }];
-
-    hooks.wrap(
+    const result = await hooks.wrap(
       'cook',
-      function(callback) {
-        callback(null, 4);
+      function() {
+        return 4;
       },
       null,
-      args);
+      []);
+
+    assert.equal(result, 5);
   });
 
-  it('supports skipWrappedFunction', function(done) {
+  it('supports skipWrappedFunction', async function() {
     const execed = {};
     hooks.pre('cook', function pre(callback) {
       execed.pre = true;
@@ -324,91 +301,83 @@ describe('wrap()', function() {
       callback();
     });
 
-    const args = [(err, res) => {
-      assert.ifError(err);
-      assert.equal(res, 3);
-      assert.ok(execed.pre);
-      assert.ok(execed.post);
-      assert.ok(!execed.wrapped);
-      done();
-    }];
-
-    hooks.wrap(
+    const result = await hooks.wrap(
       'cook',
-      function wrapped(callback) {
+      function wrapped() {
         execed.wrapped = true;
-        callback();
       },
       null,
-      args);
+      []);
+
+    assert.equal(result, 3);
+    assert.ok(execed.pre);
+    assert.ok(execed.post);
+    assert.ok(!execed.wrapped);
   });
 
-  it('supports skipWrappedFunction with arguments', function(done) {
+  it('supports skipWrappedFunction with arguments', async function() {
     const execed = {};
     hooks.pre('cook', function pre(callback, arg) {
       execed.pre = true;
-      assert.strictEqual(arg, 4);
+      assert.strictEqual(4, arg);
+
       callback(Kareem.skipWrappedFunction(3));
     });
 
     hooks.post('cook', function(res, callback) {
-      assert.equal(res, 3);
+      assert.equal(3, res);
       execed.post = true;
       callback();
     });
 
-    const args = [4, (err, res) => {
-      assert.ifError(err);
-      assert.equal(res, 3);
-      assert.ok(execed.pre);
-      assert.ok(execed.post);
-      assert.ok(!execed.wrapped);
-      done();
-    }];
+    const args = [4];
 
-    hooks.wrap(
+    const result = await hooks.wrap(
       'cook',
-      function wrapped(arg, callback) {
+      function wrapped() {
         execed.wrapped = true;
-        callback();
+        return null;
       },
       null,
-      args);
+      args
+    );
+
+    assert.equal(result, 3);
+    assert.ok(execed.pre);
+    assert.ok(execed.post);
+    assert.ok(!execed.wrapped);
   });
 
-  it('handles post errors with no args', function(done) {
+  it('handles post errors with no args', async function() {
     hooks.pre('cook', function(done) {
       obj.waffles = false;
       done();
     });
 
-    hooks.post('cook', function(callback) {
+    hooks.post('cook', function(res, callback) {
       obj.tofu = 'no';
-      callback('error!');
+      callback(new Error('error!'));
     });
 
     const obj = { bacon: 0, eggs: 0 };
 
     const args = [];
 
-    hooks.wrap(
+    const err = await hooks.wrap(
       'cook',
-      function(callback) {
-        callback();
+      function() {
+        return;
       },
       obj,
-      args);
+      args
+    ).then(() => null, err => err);
 
-    setTimeout(
-      function() {
-        assert.equal(false, obj.waffles);
-        assert.equal('no', obj.tofu);
-        done();
-      },
-      25);
+    assert.equal(err.message, 'error!');
+    assert.equal(obj.waffles, false);
+    assert.equal(obj.tofu, 'no');
   });
 
-  it('catches sync errors', function(done) {
+  it('catches sync errors', async function() {
     hooks.pre('cook', function(done) {
       done();
     });
@@ -417,19 +386,16 @@ describe('wrap()', function() {
       callback();
     });
 
-    const args = [];
-    args.push(function(error) {
-      assert.equal(error.message, 'oops!');
-      done();
-    });
-
-    hooks.wrap(
+    const err = await hooks.wrap(
       'cook',
       function() {
         throw new Error('oops!');
       },
       null,
-      args);
+      []
+    ).then(() => null, err => err);
+
+    assert.equal(err.message, 'oops!');
   });
 
   it('sync wrappers', function() {
