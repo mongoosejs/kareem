@@ -1,5 +1,12 @@
 # Changelog
 
+<a name="3.0.0"></a>
+## 3.0.0 (2025-11-18)
+
+* BREAKING CHANGE: make execPre async and drop callback support #39
+* BREAKING CHANGE: require Node 18
+* feat: overwriteArguments support #42
+
 <a name="2.6.0"></a>
 ## 2.6.0 (2024-03-04)
 
