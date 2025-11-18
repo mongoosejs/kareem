@@ -103,6 +103,63 @@ describe('execPre', function() {
     assert.ok(execed.second);
     assert.ok(err instanceof Kareem.skipWrappedFunction);
   });
+
+  it('supports overwriteArguments with return', async function() {
+    hooks.pre('init', function(obj) {
+      if (typeof obj === 'string') {
+        return Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    const args = await hooks.execPre('init', null, ['test']);
+    assert.strictEqual(args.length, 1);
+    assert.strictEqual(typeof args[0], 'object');
+    assert.strictEqual(args[0].name, 'test');
+  });
+
+  it('supports overwriteArguments with throw', async function() {
+    hooks.pre('init', function(obj) {
+      if (typeof obj === 'string') {
+        throw Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    const args = await hooks.execPre('init', null, ['test']);
+    assert.strictEqual(args.length, 1);
+    assert.strictEqual(typeof args[0], 'object');
+    assert.strictEqual(args[0].name, 'test');
+  });
+
+  it('supports overwriteArguments with multiple hooks', async function() {
+    hooks.pre('init', function(obj) {
+      if (typeof obj === 'string') {
+        return Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    hooks.pre('init', function(obj) {
+      if (obj && typeof obj === 'object' && !obj.modified) {
+        return Kareem.overwriteArguments({ ...obj, modified: true });
+      }
+    });
+
+    const args = await hooks.execPre('init', null, ['test']);
+    assert.strictEqual(args.length, 1);
+    assert.deepStrictEqual(args[0], { name: 'test', modified: true });
+  });
+
+  it('supports overwriteArguments with async functions', async function() {
+    hooks.pre('init', async function(obj) {
+      if (typeof obj === 'string') {
+        return Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    const args = await hooks.execPre('init', null, ['async-test']);
+    assert.strictEqual(args.length, 1);
+    assert.strictEqual(typeof args[0], 'object');
+    assert.strictEqual(args[0].name, 'async-test');
+  });
 });
 
 describe('execPreSync', function() {
@@ -132,5 +189,36 @@ describe('execPreSync', function() {
     assert.doesNotThrow(function() {
       hooks.execPreSync('cook', null);
     });
+  });
+
+  it('supports overwriteArguments', function() {
+    hooks.pre('init', function(obj) {
+      if (typeof obj === 'string') {
+        return Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    const args = hooks.execPreSync('init', null, ['test']);
+    assert.strictEqual(args.length, 1);
+    assert.strictEqual(typeof args[0], 'object');
+    assert.strictEqual(args[0].name, 'test');
+  });
+
+  it('supports overwriteArguments with multiple hooks', function() {
+    hooks.pre('init', function(obj) {
+      if (typeof obj === 'string') {
+        return Kareem.overwriteArguments({ name: obj });
+      }
+    });
+
+    hooks.pre('init', function(obj) {
+      if (obj && typeof obj === 'object' && !obj.modified) {
+        return Kareem.overwriteArguments({ ...obj, modified: true });
+      }
+    });
+
+    const args = hooks.execPreSync('init', null, ['test']);
+    assert.strictEqual(args.length, 1);
+    assert.deepStrictEqual(args[0], { name: 'test', modified: true });
   });
 });
