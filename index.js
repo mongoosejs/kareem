@@ -37,10 +37,15 @@ Kareem.overwriteArguments = function overwriteArguments() {
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
  * @param {Array} args arguments passed to the pre hooks
+ * @param {Object} [options] Optional options
+ * @param {Function} [options.filter] Filter function to select which hooks to run
  * @returns {Array} The potentially modified arguments
  */
-Kareem.prototype.execPre = async function execPre(name, context, args) {
-  const pres = this._pres.get(name) || [];
+Kareem.prototype.execPre = async function execPre(name, context, args, options) {
+  let pres = this._pres.get(name) || [];
+  if (options?.filter) {
+    pres = pres.filter(options.filter);
+  }
   const numPres = pres.length;
   let $args = args;
   let skipWrappedFunction = null;
@@ -116,11 +121,16 @@ Kareem.prototype.execPreSync = function(name, context, args) {
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
  * @param {Array} args Apply custom arguments to the hook
- * @param {*} options Optional options or directly the callback
+ * @param {Object} [options] Optional options
+ * @param {Error} [options.error] Error to pass to error-handling middleware
+ * @param {Function} [options.filter] Filter function to select which hooks to run
  * @returns {void}
  */
 Kareem.prototype.execPost = async function execPost(name, context, args, options) {
-  const posts = this._posts.get(name) || [];
+  let posts = this._posts.get(name) || [];
+  if (options?.filter) {
+    posts = posts.filter(options.filter);
+  }
   const numPosts = posts.length;
 
   let firstError = null;
