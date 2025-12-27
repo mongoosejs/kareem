@@ -115,6 +115,28 @@ describe('pre hooks', function() {
     await hooks.execPre('cook', obj);
     assert.equal(3, obj.bacon);
   });
+
+  /* You can pass a `filter` option to `execPre()` to select which hooks
+   * to run. The filter function receives each hook object and should return
+   * `true` to run the hook or `false` to skip it.
+   */
+  it('supports filtering which hooks to run', async function() {
+    const execed = [];
+
+    const fn1 = function() { execed.push('first'); };
+    fn1.skipMe = true;
+    hooks.pre('cook', fn1);
+
+    const fn2 = function() { execed.push('second'); };
+    hooks.pre('cook', fn2);
+
+    // Only runs fn2, skips fn1 because fn1.skipMe is true
+    await hooks.execPre('cook', null, [], {
+      filter: hook => !hook.fn.skipMe
+    });
+
+    assert.deepStrictEqual(execed, ['second']);
+  });
 });
 
 //
@@ -184,6 +206,28 @@ describe('post hooks', function() {
 
     await hooks.execPost('cook', obj, [obj]);
     assert.equal(obj.bacon, 3);
+  });
+
+  /* You can pass a `filter` option to `execPost()` to select which hooks
+   * to run. The filter function receives each hook object and should return
+   * `true` to run the hook or `false` to skip it.
+   */
+  it('supports filtering which hooks to run', async function() {
+    const execed = [];
+
+    const fn1 = function() { execed.push('first'); };
+    fn1.skipMe = true;
+    hooks.post('cook', fn1);
+
+    const fn2 = function() { execed.push('second'); };
+    hooks.post('cook', fn2);
+
+    // Only runs fn2, skips fn1 because fn1.skipMe is true
+    await hooks.execPost('cook', null, [], {
+      filter: hook => !hook.fn.skipMe
+    });
+
+    assert.deepStrictEqual(execed, ['second']);
   });
 });
 
