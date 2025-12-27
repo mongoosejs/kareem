@@ -243,6 +243,36 @@ describe('execPost', function() {
     const eggs = await hooks.execPost('cook', null, [4], options);
     assert.equal(eggs, 5);
   });
+
+  it('supports filter option to select which hooks to run', async function() {
+    const execed = [];
+
+    const fn1 = function() { execed.push('first'); };
+    fn1.skipMe = true;
+    hooks.post('cook', fn1);
+
+    const fn2 = function() { execed.push('second'); };
+    hooks.post('cook', fn2);
+
+    const fn3 = function() { execed.push('third'); };
+    fn3.skipMe = true;
+    hooks.post('cook', fn3);
+
+    await hooks.execPost('cook', null, [4], { filter: hook => !hook.fn.skipMe });
+    assert.deepStrictEqual(execed, ['second']);
+  });
+
+  for (const options of [{ filter: null }, { filter: undefined }, undefined]) {
+    it(`runs all hooks when filter options is ${JSON.stringify(options)}`, async function() {
+      const execed = [];
+
+      hooks.post('cook', function() { execed.push('first'); });
+      hooks.post('cook', function() { execed.push('second'); });
+
+      await hooks.execPost('cook', null, [4], options);
+      assert.deepStrictEqual(execed, ['first', 'second']);
+    });
+  }
 });
 
 describe('execPostSync', function() {
