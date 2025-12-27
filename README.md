@@ -15,37 +15,28 @@ Named for the NBA's 2nd all-time leading scorer Kareem Abdul-Jabbar, known for h
 
 ## pre hooks
 
-Much like [hooks](https://npmjs.org/package/hooks), kareem lets you define
-pre and post hooks: pre hooks are called before a given function executes.
-Unlike hooks, kareem stores hooks and other internal state in a separate
-object, rather than relying on inheritance. Furthermore, kareem exposes
-an `execPre()` function that allows you to execute your pre hooks when
-appropriate, giving you more fine-grained control over your function hooks.
+NOTE: this file has some empty comment lines to workaround https://github.com/vkarpov15/acquit/issues/30
 
 ### It runs without any hooks specified
 
 ```javascript
-hooks.execPre('cook', null, function() {
-  // ...
-});
+await hooks.execPre('cook', null);
 ```
 
 ### It runs basic serial pre hooks
 
-pre hook functions take one parameter, a "done" function that you execute
-when your pre hook is finished.
+pre hook functions can return a promise that resolves when finished.
 
 ```javascript
 let count = 0;
 
-hooks.pre('cook', function(done) {
+hooks.pre('cook', function() {
   ++count;
-  done();
+  return Promise.resolve();
 });
 
-hooks.execPre('cook', null, function() {
-  assert.equal(1, count);
-});
+await hooks.execPre('cook', null);
+assert.equal(1, count);
 ```
 
 ### It can run multiple pre hooks
@@ -54,20 +45,19 @@ hooks.execPre('cook', null, function() {
 let count1 = 0;
 let count2 = 0;
 
-hooks.pre('cook', function(done) {
+hooks.pre('cook', function() {
   ++count1;
-  done();
+  return Promise.resolve();
 });
 
-hooks.pre('cook', function(done) {
+hooks.pre('cook', function() {
   ++count2;
-  done();
+  return Promise.resolve();
 });
 
-hooks.execPre('cook', null, function() {
-  assert.equal(1, count1);
-  assert.equal(1, count2);
-});
+await hooks.execPre('cook', null);
+assert.equal(1, count1);
+assert.equal(1, count2);
 ```
 
 ### It can run fully synchronous pre hooks
@@ -87,11 +77,9 @@ hooks.pre('cook', function() {
   ++count2;
 });
 
-hooks.execPre('cook', null, function(error) {
-  assert.equal(null, error);
-  assert.equal(1, count1);
-  assert.equal(1, count2);
-});
+await hooks.execPre('cook', null);
+assert.equal(1, count1);
+assert.equal(1, count2);
 ```
 
 ### It properly attaches context to pre hooks
@@ -99,63 +87,20 @@ hooks.execPre('cook', null, function(error) {
 Pre save hook functions are bound to the second parameter to `execPre()`
 
 ```javascript
-hooks.pre('cook', function(done) {
+hooks.pre('cook', function() {
   this.bacon = 3;
-  done();
 });
 
-hooks.pre('cook', function(done) {
+hooks.pre('cook', function() {
   this.eggs = 4;
-  done();
 });
 
 const obj = { bacon: 0, eggs: 0 };
 
 // In the pre hooks, `this` will refer to `obj`
-hooks.execPre('cook', obj, function(error) {
-  assert.equal(null, error);
-  assert.equal(3, obj.bacon);
-  assert.equal(4, obj.eggs);
-});
-```
-
-### It can execute parallel (async) pre hooks
-
-Like the hooks module, you can declare "async" pre hooks - these take two
-parameters, the functions `next()` and `done()`. `next()` passes control to
-the next pre hook, but the underlying function won't be called until all
-async pre hooks have called `done()`.
-
-```javascript
-hooks.pre('cook', true, function(next, done) {
-  this.bacon = 3;
-  next();
-  setTimeout(function() {
-    done();
-  }, 5);
-});
-
-hooks.pre('cook', true, function(next, done) {
-  next();
-  const _this = this;
-  setTimeout(function() {
-    _this.eggs = 4;
-    done();
-  }, 10);
-});
-
-hooks.pre('cook', function(next) {
-  this.waffles = false;
-  next();
-});
-
-const obj = { bacon: 0, eggs: 0 };
-
-hooks.execPre('cook', obj, function() {
-  assert.equal(3, obj.bacon);
-  assert.equal(4, obj.eggs);
-  assert.equal(false, obj.waffles);
-});
+await hooks.execPre('cook', obj);
+assert.equal(3, obj.bacon);
+assert.equal(4, obj.eggs);
 ```
 
 ### It supports returning a promise
@@ -176,9 +121,32 @@ hooks.pre('cook', function() {
 
 const obj = { bacon: 0 };
 
-hooks.execPre('cook', obj, function() {
-  assert.equal(3, obj.bacon);
+await hooks.execPre('cook', obj);
+assert.equal(3, obj.bacon);
+```
+
+### It supports filtering which hooks to run
+
+You can pass a `filter` option to `execPre()` to select which hooks
+to run. The filter function receives each hook object and should return
+`true` to run the hook or `false` to skip it.
+
+```javascript
+const execed = [];
+
+const fn1 = function() { execed.push('first'); };
+fn1.skipMe = true;
+hooks.pre('cook', fn1);
+
+const fn2 = function() { execed.push('second'); };
+hooks.pre('cook', fn2);
+
+// Only runs fn2, skips fn1 because fn1.skipMe is true
+await hooks.execPre('cook', null, [], {
+  filter: hook => !hook.fn.skipMe
 });
+
+assert.deepStrictEqual(execed, ['second']);
 ```
 
 ## post hooks
@@ -186,27 +154,22 @@ hooks.execPre('cook', obj, function() {
 ### It runs without any hooks specified
 
 ```javascript
-hooks.execPost('cook', null, [1], function(error, eggs) {
-  assert.ifError(error);
-  assert.equal(1, eggs);
-  done();
-});
+const [eggs] = await hooks.execPost('cook', null, [1]);
+assert.equal(eggs, 1);
 ```
 
 ### It executes with parameters passed in
 
 ```javascript
 hooks.post('cook', function(eggs, bacon, callback) {
-  assert.equal(1, eggs);
-  assert.equal(2, bacon);
+  assert.equal(eggs, 1);
+  assert.equal(bacon, 2);
   callback();
 });
 
-hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
-  assert.ifError(error);
-  assert.equal(1, eggs);
-  assert.equal(2, bacon);
-});
+const [eggs, bacon] = await hooks.execPost('cook', null, [1, 2]);
+assert.equal(eggs, 1);
+assert.equal(bacon, 2);
 ```
 
 ### It can use synchronous post hooks
@@ -216,25 +179,23 @@ const execed = {};
 
 hooks.post('cook', function(eggs, bacon) {
   execed.first = true;
-  assert.equal(1, eggs);
-  assert.equal(2, bacon);
+  assert.equal(eggs, 1);
+  assert.equal(bacon, 2);
 });
 
 hooks.post('cook', function(eggs, bacon, callback) {
   execed.second = true;
-  assert.equal(1, eggs);
-  assert.equal(2, bacon);
+  assert.equal(eggs, 1);
+  assert.equal(bacon, 2);
   callback();
 });
 
-hooks.execPost('cook', null, [1, 2], function(error, eggs, bacon) {
-  assert.ifError(error);
-  assert.equal(2, Object.keys(execed).length);
-  assert.ok(execed.first);
-  assert.ok(execed.second);
-  assert.equal(1, eggs);
-  assert.equal(2, bacon);
-});
+const [eggs, bacon] = await hooks.execPost('cook', null, [1, 2]);
+assert.equal(Object.keys(execed).length, 2);
+assert.ok(execed.first);
+assert.ok(execed.second);
+assert.equal(eggs, 1);
+assert.equal(bacon, 2);
 ```
 
 ### It supports returning a promise
@@ -255,9 +216,32 @@ hooks.post('cook', function() {
 
 const obj = { bacon: 0 };
 
-hooks.execPost('cook', obj, obj, function() {
-  assert.equal(obj.bacon, 3);
+await hooks.execPost('cook', obj, [obj]);
+assert.equal(obj.bacon, 3);
+```
+
+### It supports filtering which hooks to run
+
+You can pass a `filter` option to `execPost()` to select which hooks
+to run. The filter function receives each hook object and should return
+`true` to run the hook or `false` to skip it.
+
+```javascript
+const execed = [];
+
+const fn1 = function() { execed.push('first'); };
+fn1.skipMe = true;
+hooks.post('cook', fn1);
+
+const fn2 = function() { execed.push('second'); };
+hooks.post('cook', fn2);
+
+// Only runs fn2, skips fn1 because fn1.skipMe is true
+await hooks.execPost('cook', null, [], {
+  filter: hook => !hook.fn.skipMe
 });
+
+assert.deepStrictEqual(execed, ['second']);
 ```
 
 ## wrap()
@@ -265,26 +249,23 @@ hooks.execPost('cook', obj, obj, function() {
 ### It wraps pre and post calls into one call
 
 ```javascript
-hooks.pre('cook', true, function(next, done) {
-  this.bacon = 3;
-  next();
-  setTimeout(function() {
-    done();
-  }, 5);
+hooks.pre('cook', function() {
+  return new Promise(resolve => {
+    this.bacon = 3;
+    setTimeout(() => {
+      resolve();
+    }, 5);
+  });
 });
 
-hooks.pre('cook', true, function(next, done) {
-  next();
-  const _this = this;
-  setTimeout(function() {
-    _this.eggs = 4;
-    done();
-  }, 10);
+hooks.pre('cook', function() {
+  this.eggs = 4;
+  return Promise.resolve();
 });
 
-hooks.pre('cook', function(next) {
+hooks.pre('cook', function() {
   this.waffles = false;
-  next();
+  return Promise.resolve();
 });
 
 hooks.post('cook', function(obj) {
@@ -294,28 +275,24 @@ hooks.post('cook', function(obj) {
 const obj = { bacon: 0, eggs: 0 };
 
 const args = [obj];
-args.push(function(error, result) {
-  assert.ifError(error);
-  assert.equal(null, error);
-  assert.equal(3, obj.bacon);
-  assert.equal(4, obj.eggs);
-  assert.equal(false, obj.waffles);
-  assert.equal('no', obj.tofu);
 
-  assert.equal(obj, result);
-});
-
-hooks.wrap(
+const result = await hooks.wrap(
   'cook',
-  function(o, callback) {
-    assert.equal(3, obj.bacon);
-    assert.equal(4, obj.eggs);
-    assert.equal(false, obj.waffles);
-    assert.equal(undefined, obj.tofu);
-    callback(null, o);
+  function(o) {
+    assert.equal(obj.bacon, 3);
+    assert.equal(obj.eggs, 4);
+    assert.equal(obj.waffles, false);
+    assert.equal(obj.tofu, undefined);
+    return o;
   },
   obj,
   args);
+
+assert.equal(obj.bacon, 3);
+assert.equal(obj.eggs, 4);
+assert.equal(obj.waffles, false);
+assert.equal(obj.tofu, 'no');
+assert.equal(result, obj);
 ```
 
 ## createWrapper()
@@ -323,26 +300,23 @@ hooks.wrap(
 ### It wraps wrap() into a callable function
 
 ```javascript
-hooks.pre('cook', true, function(next, done) {
+hooks.pre('cook', function() {
   this.bacon = 3;
-  next();
-  setTimeout(function() {
-    done();
-  }, 5);
+  return Promise.resolve();
 });
 
-hooks.pre('cook', true, function(next, done) {
-  next();
-  const _this = this;
-  setTimeout(function() {
-    _this.eggs = 4;
-    done();
-  }, 10);
+hooks.pre('cook', function() {
+  return new Promise(resolve => {
+    this.eggs = 4;
+    setTimeout(function() {
+      resolve();
+    }, 10);
+  });
 });
 
-hooks.pre('cook', function(next) {
+hooks.pre('cook', function() {
   this.waffles = false;
-  next();
+  return Promise.resolve();
 });
 
 hooks.post('cook', function(obj) {
@@ -353,24 +327,22 @@ const obj = { bacon: 0, eggs: 0 };
 
 const cook = hooks.createWrapper(
   'cook',
-  function(o, callback) {
+  function(o) {
     assert.equal(3, obj.bacon);
     assert.equal(4, obj.eggs);
     assert.equal(false, obj.waffles);
     assert.equal(undefined, obj.tofu);
-    callback(null, o);
+    return o;
   },
   obj);
 
-cook(obj, function(error, result) {
-  assert.ifError(error);
-  assert.equal(3, obj.bacon);
-  assert.equal(4, obj.eggs);
-  assert.equal(false, obj.waffles);
-  assert.equal('no', obj.tofu);
+const result = await cook(obj);
+assert.equal(obj.bacon, 3);
+assert.equal(obj.eggs, 4);
+assert.equal(obj.waffles, false);
+assert.equal(obj.tofu, 'no');
 
-  assert.equal(obj, result);
-});
+assert.equal(result, obj);
 ```
 
 ## clone()
