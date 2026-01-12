@@ -160,6 +160,36 @@ describe('execPre', function() {
     assert.strictEqual(typeof args[0], 'object');
     assert.strictEqual(args[0].name, 'async-test');
   });
+
+  it('supports filter option to select which hooks to run', async function() {
+    const execed = [];
+
+    const fn1 = function() { execed.push('first'); };
+    fn1.skipMe = true;
+    hooks.pre('cook', fn1);
+
+    const fn2 = function() { execed.push('second'); };
+    hooks.pre('cook', fn2);
+
+    const fn3 = function() { execed.push('third'); };
+    fn3.skipMe = true;
+    hooks.pre('cook', fn3);
+
+    await hooks.execPre('cook', null, [], { filter: hook => !hook.fn.skipMe });
+    assert.deepStrictEqual(execed, ['second']);
+  });
+
+  for (const options of [{ filter: null }, { filter: undefined }, undefined]) {
+    it(`runs all hooks when filter options is ${JSON.stringify(options)}`, async function() {
+      const execed = [];
+
+      hooks.pre('cook', function() { execed.push('first'); });
+      hooks.pre('cook', function() { execed.push('second'); });
+
+      await hooks.execPre('cook', null, [], options);
+      assert.deepStrictEqual(execed, ['first', 'second']);
+    });
+  }
 });
 
 describe('execPreSync', function() {
