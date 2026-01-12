@@ -1,5 +1,10 @@
 # Changelog
 
+<a name="3.1.0"></a>
+## 3.1.0 (2026-01-12)
+
+* feat(exec): add filter option to allow executing hooks based on a filter function #43
+
 <a name="3.0.0"></a>
 ## 3.0.0 (2025-11-18)
 
