@@ -99,10 +99,15 @@ Kareem.prototype.execPre = async function execPre(name, context, args, options) 
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
  * @param {Array} [args] Apply custom arguments to the hook
+ * @param {Object} [options] Optional options
+ * @param {Function} [options.filter] Filter function to select which hooks to run
  * @returns {Array} The potentially modified arguments
  */
-Kareem.prototype.execPreSync = function(name, context, args) {
-  const pres = this._pres.get(name) || [];
+Kareem.prototype.execPreSync = function(name, context, args, options) {
+  let pres = this._pres.get(name) || [];
+  if (options?.filter) {
+    pres = pres.filter(options.filter);
+  }
   const numPres = pres.length;
   let $args = args || [];
 
@@ -241,10 +246,15 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
  * @param {Array} args Apply custom arguments to the hook
+ * @param {Object} [options] Optional options
+ * @param {Function} [options.filter] Filter function to select which hooks to run
  * @returns {Array} The used arguments
  */
-Kareem.prototype.execPostSync = function(name, context, args) {
-  const posts = this._posts.get(name) || [];
+Kareem.prototype.execPostSync = function(name, context, args, options) {
+  let posts = this._posts.get(name) || [];
+  if (options?.filter) {
+    posts = posts.filter(options.filter);
+  }
   const numPosts = posts.length;
 
   for (let i = 0; i < numPosts; ++i) {
