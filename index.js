@@ -271,16 +271,24 @@ Kareem.prototype.execPostSync = function(name, context, args, options) {
  * Create a synchronous wrapper for "fn"
  * @param {String} name The name of the hook
  * @param {Function} fn The function to wrap
+ * @param {Object} [options] Options for the wrapper
+ * @param {Function} [options.getOptions] Function that receives the arguments and returns options for execPreSync/execPostSync (e.g., { filter })
  * @returns {Function} The wrapped function
  */
-Kareem.prototype.createWrapperSync = function(name, fn) {
+Kareem.prototype.createWrapperSync = function(name, fn, options) {
   const _this = this;
+  const getOptions = options?.getOptions;
   return function syncWrapper() {
-    const modifiedArgs = _this.execPreSync(name, this, Array.from(arguments));
+    const args = Array.from(arguments);
+    const execOptions = typeof getOptions === 'function' ? getOptions(args) : {};
+    const preOptions = execOptions.pre ?? execOptions;
+    const postOptions = execOptions.post ?? execOptions;
+
+    const modifiedArgs = _this.execPreSync(name, this, args, preOptions);
 
     const toReturn = fn.apply(this, modifiedArgs);
 
-    const result = _this.execPostSync(name, this, [toReturn]);
+    const result = _this.execPostSync(name, this, [toReturn], postOptions);
 
     return result[0];
   };

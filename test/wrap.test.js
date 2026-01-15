@@ -531,4 +531,84 @@ describe('wrap()', function() {
 
     assert.strictEqual(result, 12);
   });
+
+  it('sync wrappers support getOptions to filter hooks', function() {
+    const execed = [];
+
+    const fn1 = function() { execed.push('pre1'); };
+    fn1.skipMe = true;
+    hooks.pre('init', fn1);
+
+    const fn2 = function() { execed.push('pre2'); };
+    hooks.pre('init', fn2);
+
+    const postFn1 = function() { execed.push('post1'); };
+    postFn1.skipMe = true;
+    hooks.post('init', postFn1);
+
+    const postFn2 = function() { execed.push('post2'); };
+    hooks.post('init', postFn2);
+
+    const wrapper = hooks.createWrapperSync('init', function(doc) {
+      execed.push('fn');
+      return doc;
+    }, {
+      getOptions: (args) => {
+        const opts = args[1] || {};
+        if (opts.skipMiddleware) {
+          return { filter: hook => !hook.fn.skipMe };
+        }
+        return {};
+      }
+    });
+
+    // Without skipMiddleware option, all hooks run
+    wrapper({ name: 'test' }, {});
+    assert.deepStrictEqual(execed, ['pre1', 'pre2', 'fn', 'post1', 'post2']);
+
+    // With skipMiddleware option, filtered hooks are skipped
+    execed.length = 0;
+    wrapper({ name: 'test' }, { skipMiddleware: true });
+    assert.deepStrictEqual(execed, ['pre2', 'fn', 'post2']);
+  });
+
+  it('sync wrappers support separate pre/post options from getOptions', function() {
+    const execed = [];
+
+    const fn1 = function() { execed.push('pre1'); };
+    fn1.skipMe = true;
+    hooks.pre('init', fn1);
+
+    const fn2 = function() { execed.push('pre2'); };
+    hooks.pre('init', fn2);
+
+    const postFn1 = function() { execed.push('post1'); };
+    postFn1.skipMe = true;
+    hooks.post('init', postFn1);
+
+    const postFn2 = function() { execed.push('post2'); };
+    hooks.post('init', postFn2);
+
+    const wrapper = hooks.createWrapperSync('init', function(doc) {
+      execed.push('fn');
+      return doc;
+    }, {
+      getOptions: (args) => {
+        const opts = args[1] || {};
+        return {
+          pre: opts.skipPre ? { filter: hook => !hook.fn.skipMe } : {},
+          post: opts.skipPost ? { filter: hook => !hook.fn.skipMe } : {}
+        };
+      }
+    });
+
+    // Skip only pre hooks
+    wrapper({ name: 'test' }, { skipPre: true });
+    assert.deepStrictEqual(execed, ['pre2', 'fn', 'post1', 'post2']);
+
+    // Skip only post hooks
+    execed.length = 0;
+    wrapper({ name: 'test' }, { skipPost: true });
+    assert.deepStrictEqual(execed, ['pre1', 'pre2', 'fn', 'post2']);
+  });
 });
