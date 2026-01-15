@@ -251,4 +251,34 @@ describe('execPreSync', function() {
     assert.strictEqual(args.length, 1);
     assert.deepStrictEqual(args[0], { name: 'test', modified: true });
   });
+
+  it('supports filter option to select which hooks to run', function() {
+    const execed = [];
+
+    const fn1 = function() { execed.push('first'); };
+    fn1.skipMe = true;
+    hooks.pre('cook', fn1);
+
+    const fn2 = function() { execed.push('second'); };
+    hooks.pre('cook', fn2);
+
+    const fn3 = function() { execed.push('third'); };
+    fn3.skipMe = true;
+    hooks.pre('cook', fn3);
+
+    hooks.execPreSync('cook', null, [], { filter: hook => !hook.fn.skipMe });
+    assert.deepStrictEqual(execed, ['second']);
+  });
+
+  for (const options of [{ filter: null }, { filter: undefined }, undefined]) {
+    it(`runs all hooks when filter option is ${JSON.stringify(options)}`, function() {
+      const execed = [];
+
+      hooks.pre('cook', function() { execed.push('first'); });
+      hooks.pre('cook', function() { execed.push('second'); });
+
+      hooks.execPreSync('cook', null, [], options);
+      assert.deepStrictEqual(execed, ['first', 'second']);
+    });
+  }
 });
