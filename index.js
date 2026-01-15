@@ -271,24 +271,26 @@ Kareem.prototype.execPostSync = function(name, context, args, options) {
  * Create a synchronous wrapper for "fn"
  * @param {String} name The name of the hook
  * @param {Function} fn The function to wrap
+ * @param {*} context Overwrite the "this" for the hook. If null/undefined, uses the calling context.
  * @param {Object} [options] Options for the wrapper
- * @param {Function} [options.getOptions] Function that receives the arguments and returns options for execPreSync/execPostSync (e.g., { filter })
+ * @param {Function} [options.getOptions] Function that receives the wrapper arguments and returns options for execPreSync/execPostSync. Can return `{ filter }` for both, or `{ pre: { filter }, post: { filter } }` for separate options.
  * @returns {Function} The wrapped function
  */
-Kareem.prototype.createWrapperSync = function(name, fn, options) {
+Kareem.prototype.createWrapperSync = function(name, fn, context, options) {
   const _this = this;
   const getOptions = options?.getOptions;
   return function syncWrapper() {
+    const _context = context || this;
     const args = Array.from(arguments);
     const execOptions = typeof getOptions === 'function' ? getOptions(args) : {};
     const preOptions = execOptions.pre ?? execOptions;
     const postOptions = execOptions.post ?? execOptions;
 
-    const modifiedArgs = _this.execPreSync(name, this, args, preOptions);
+    const modifiedArgs = _this.execPreSync(name, _context, args, preOptions);
 
-    const toReturn = fn.apply(this, modifiedArgs);
+    const toReturn = fn.apply(_context, modifiedArgs);
 
-    const result = _this.execPostSync(name, this, [toReturn], postOptions);
+    const result = _this.execPostSync(name, _context, [toReturn], postOptions);
 
     return result[0];
   };

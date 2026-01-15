@@ -552,7 +552,7 @@ describe('wrap()', function() {
     const wrapper = hooks.createWrapperSync('init', function(doc) {
       execed.push('fn');
       return doc;
-    }, {
+    }, null, {
       getOptions: (args) => {
         const opts = args[1] || {};
         if (opts.skipMiddleware) {
@@ -592,7 +592,7 @@ describe('wrap()', function() {
     const wrapper = hooks.createWrapperSync('init', function(doc) {
       execed.push('fn');
       return doc;
-    }, {
+    }, null, {
       getOptions: (args) => {
         const opts = args[1] || {};
         return {
@@ -610,5 +610,58 @@ describe('wrap()', function() {
     execed.length = 0;
     wrapper({ name: 'test' }, { skipPost: true });
     assert.deepStrictEqual(execed, ['pre1', 'pre2', 'fn', 'post2']);
+  });
+
+  it('sync wrappers use provided context over calling context', function() {
+    const providedContext = { name: 'provided' };
+    const callingContext = { name: 'calling' };
+    let preContext = null;
+    let fnContext = null;
+    let postContext = null;
+
+    hooks.pre('init', function() {
+      preContext = this;
+    });
+
+    hooks.post('init', function() {
+      postContext = this;
+    });
+
+    const wrapper = hooks.createWrapperSync('init', function() {
+      fnContext = this;
+      return 'result';
+    }, providedContext);
+
+    wrapper.call(callingContext);
+
+    assert.strictEqual(preContext, providedContext);
+    assert.strictEqual(fnContext, providedContext);
+    assert.strictEqual(postContext, providedContext);
+  });
+
+  it('sync wrappers fall back to calling context when context is null', function() {
+    const callingContext = { name: 'calling' };
+    let preContext = null;
+    let fnContext = null;
+    let postContext = null;
+
+    hooks.pre('init', function() {
+      preContext = this;
+    });
+
+    hooks.post('init', function() {
+      postContext = this;
+    });
+
+    const wrapper = hooks.createWrapperSync('init', function() {
+      fnContext = this;
+      return 'result';
+    }, null);
+
+    wrapper.call(callingContext);
+
+    assert.strictEqual(preContext, callingContext);
+    assert.strictEqual(fnContext, callingContext);
+    assert.strictEqual(postContext, callingContext);
   });
 });
