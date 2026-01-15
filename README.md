@@ -15,7 +15,12 @@ Named for the NBA's 2nd all-time leading scorer Kareem Abdul-Jabbar, known for h
 
 ## pre hooks
 
-NOTE: this file has some empty comment lines to workaround https://github.com/vkarpov15/acquit/issues/30
+Much like [hooks](https://npmjs.org/package/hooks), kareem lets you define
+pre and post hooks: pre hooks are called before a given function executes.
+Unlike hooks, kareem stores hooks and other internal state in a separate
+object, rather than relying on inheritance. Furthermore, kareem exposes
+an `execPre()` function that allows you to execute your pre hooks when
+appropriate, giving you more fine-grained control over your function hooks.
 
 ### It runs without any hooks specified
 
