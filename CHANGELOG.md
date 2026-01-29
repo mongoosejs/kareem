@@ -1,5 +1,10 @@
 # Changelog
 
+<a name="3.2.0"></a>
+## 3.2.0 (2026-01-29)
+
+* feat(exec): add filter option to execPreSync and execPostSync #44
+
 <a name="3.1.0"></a>
 ## 3.1.0 (2026-01-12)
 
