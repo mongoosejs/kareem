@@ -99,10 +99,15 @@ Kareem.prototype.execPre = async function execPre(name, context, args, options) 
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
  * @param {Array} [args] Apply custom arguments to the hook
+ * @param {Object} [options] Optional options
+ * @param {Function} [options.filter] Filter function to select which hooks to run
  * @returns {Array} The potentially modified arguments
  */
-Kareem.prototype.execPreSync = function(name, context, args) {
-  const pres = this._pres.get(name) || [];
+Kareem.prototype.execPreSync = function(name, context, args, options) {
+  let pres = this._pres.get(name) || [];
+  if (options?.filter) {
+    pres = pres.filter(options.filter);
+  }
   const numPres = pres.length;
   let $args = args || [];
 
@@ -241,10 +246,15 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
  * @param {String} name The hook name to execute
  * @param {*} context Overwrite the "this" for the hook
  * @param {Array} args Apply custom arguments to the hook
+ * @param {Object} [options] Optional options
+ * @param {Function} [options.filter] Filter function to select which hooks to run
  * @returns {Array} The used arguments
  */
-Kareem.prototype.execPostSync = function(name, context, args) {
-  const posts = this._posts.get(name) || [];
+Kareem.prototype.execPostSync = function(name, context, args, options) {
+  let posts = this._posts.get(name) || [];
+  if (options?.filter) {
+    posts = posts.filter(options.filter);
+  }
   const numPosts = posts.length;
 
   for (let i = 0; i < numPosts; ++i) {
@@ -261,16 +271,26 @@ Kareem.prototype.execPostSync = function(name, context, args) {
  * Create a synchronous wrapper for "fn"
  * @param {String} name The name of the hook
  * @param {Function} fn The function to wrap
+ * @param {*} context Overwrite the "this" for the hook. If null/undefined, uses the calling context.
+ * @param {Object} [options] Options for the wrapper
+ * @param {Function} [options.getOptions] Function that receives the wrapper arguments and returns options for execPreSync/execPostSync. Can return `{ filter }` for both, or `{ pre: { filter }, post: { filter } }` for separate options.
  * @returns {Function} The wrapped function
  */
-Kareem.prototype.createWrapperSync = function(name, fn) {
+Kareem.prototype.createWrapperSync = function(name, fn, context, options) {
   const _this = this;
+  const getOptions = options?.getOptions;
   return function syncWrapper() {
-    const modifiedArgs = _this.execPreSync(name, this, Array.from(arguments));
+    const _context = context || this;
+    const args = Array.from(arguments);
+    const execOptions = typeof getOptions === 'function' ? getOptions(args) : {};
+    const preOptions = execOptions.pre ?? execOptions;
+    const postOptions = execOptions.post ?? execOptions;
 
-    const toReturn = fn.apply(this, modifiedArgs);
+    const modifiedArgs = _this.execPreSync(name, _context, args, preOptions);
 
-    const result = _this.execPostSync(name, this, [toReturn]);
+    const toReturn = fn.apply(_context, modifiedArgs);
+
+    const result = _this.execPostSync(name, _context, [toReturn], postOptions);
 
     return result[0];
   };
