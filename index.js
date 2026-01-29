@@ -280,7 +280,7 @@ Kareem.prototype.createWrapperSync = function(name, fn, context, options) {
   const _this = this;
   const getOptions = options?.getOptions;
   return function syncWrapper() {
-    const _context = context || this;
+    const _context = context ?? this;
     const args = Array.from(arguments);
     const execOptions = typeof getOptions === 'function' ? getOptions(args) : {};
     const preOptions = execOptions.pre ?? execOptions;
