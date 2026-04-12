@@ -141,43 +141,38 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
     return args;
   }
 
+  let cbPromise = null;
+  let resolve;
+  let reject;
+  let newArgs = args.slice();
+  let numArgs = args.length;
+  if (options?.numCallbackParams != null) {
+    numArgs = options.numCallbackParams;
+    for (let i = newArgs.length; i < numArgs; ++i) {
+      newArgs.push(null);
+    }
+  }
+  newArgs.push(function nextCallback(err) {
+    if (err) {
+      reject(err);
+    } else {
+      resolve();
+    }
+  });
+  let errorArgs = options?.error ? [firstError, ...newArgs] : null;
+
   for (const currentPost of posts) {
     const post = currentPost.fn;
-    let numArgs = 0;
-    const newArgs = [];
-    const argLength = args.length;
-    for (let i = 0; i < argLength; ++i) {
-      if (!args[i] || !args[i]._kareemIgnore) {
-        numArgs += 1;
-        newArgs.push(args[i]);
-      }
-    }
-    // If numCallbackParams set, fill in the rest with null to enforce consistent number of args
-    if (options?.numCallbackParams != null) {
-      numArgs = options.numCallbackParams;
-      for (let i = newArgs.length; i < numArgs; ++i) {
-        newArgs.push(null);
-      }
-    }
 
-    let resolve;
-    let reject;
-    const cbPromise = new Promise((_resolve, _reject) => {
+    cbPromise = new Promise((_resolve, _reject) => {
       resolve = _resolve;
       reject = _reject;
-    });
-    newArgs.push(function nextCallback(err) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
     });
 
     if (firstError) {
       if (isErrorHandlingMiddleware(currentPost, numArgs)) {
         try {
-          const res = post.apply(context, [firstError].concat(newArgs));
+          const res = post.apply(context, errorArgs);
           if (isPromiseLike(res)) {
             await res;
           } else if (post.length === numArgs + 2) {
@@ -187,9 +182,25 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
         } catch (error) {
           if (error instanceof Kareem.overwriteResult) {
             args = error.args;
+            newArgs = args.slice();
+            numArgs = args.length;
+            if (options?.numCallbackParams != null) {
+              numArgs = options.numCallbackParams;
+              for (let i = newArgs.length; i < numArgs; ++i) {
+                newArgs.push(null);
+              }
+            }
+            newArgs.push(function nextCallback(err) {
+              if (err) {
+                reject(err);
+              } else {
+                resolve();
+              }
+            });
             continue;
           }
           firstError = error;
+          errorArgs = [firstError, ...newArgs];
         }
       } else {
         continue;
@@ -211,14 +222,45 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
         } catch (error) {
           if (error instanceof Kareem.overwriteResult) {
             args = error.args;
+            newArgs = args.slice();
+            numArgs = args.length;
+            if (options?.numCallbackParams != null) {
+              numArgs = options.numCallbackParams;
+              for (let i = newArgs.length; i < numArgs; ++i) {
+                newArgs.push(null);
+              }
+            }
+            newArgs.push(function nextCallback(err) {
+              if (err) {
+                reject(err);
+              } else {
+                resolve();
+              }
+            });
             continue;
           }
           firstError = error;
+          errorArgs = [firstError, ...newArgs];
           continue;
         }
 
         if (res instanceof Kareem.overwriteResult) {
           args = res.args;
+          newArgs = args.slice();
+          numArgs = args.length;
+          if (options?.numCallbackParams != null) {
+            numArgs = options.numCallbackParams;
+            for (let i = newArgs.length; i < numArgs; ++i) {
+              newArgs.push(null);
+            }
+          }
+          newArgs.push(function nextCallback(err) {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
           continue;
         }
       }
