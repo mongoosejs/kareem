@@ -55,17 +55,8 @@ Kareem.prototype.execPre = async function execPre(name, context, args, options) 
   }
 
   for (const pre of pres) {
-    const args = [];
-    const _args = [null].concat($args);
-    for (let i = 1; i < _args.length; ++i) {
-      if (i === _args.length - 1 && typeof _args[i] === 'function') {
-        continue; // skip callbacks to avoid accidentally calling the callback from a hook
-      }
-      args.push(_args[i]);
-    }
-
     try {
-      const maybePromiseLike = pre.fn.apply(context, args);
+      const maybePromiseLike = pre.fn.apply(context, $args);
       if (isPromiseLike(maybePromiseLike)) {
         const result = await maybePromiseLike;
         if (result instanceof Kareem.overwriteArguments) {
