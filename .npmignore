@@ -3,3 +3,4 @@ test
 .github
 .eslintrc.json
 .npmrc
+benchmarks
