@@ -144,21 +144,18 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
   let cbPromise = null;
   let resolve;
   let reject;
-  let newArgs = args.slice();
-  let numArgs = args.length;
-  if (options?.numCallbackParams != null) {
-    numArgs = options.numCallbackParams;
-    for (let i = newArgs.length; i < numArgs; ++i) {
-      newArgs.push(null);
-    }
-  }
-  newArgs.push(function nextCallback(err) {
+  const nextCallback = function nextCallback(err) {
     if (err) {
       reject(err);
     } else {
       resolve();
     }
-  });
+  };
+
+  let newArgs = args.slice();
+  _handleNumCallbackParams(newArgs, options?.numCallbackParams);
+  let numArgs = newArgs.length;
+  newArgs.push(nextCallback);
   let errorArgs = options?.error ? [firstError, ...newArgs] : null;
 
   for (const currentPost of posts) {
@@ -183,20 +180,9 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
           if (error instanceof Kareem.overwriteResult) {
             args = error.args;
             newArgs = args.slice();
-            numArgs = args.length;
-            if (options?.numCallbackParams != null) {
-              numArgs = options.numCallbackParams;
-              for (let i = newArgs.length; i < numArgs; ++i) {
-                newArgs.push(null);
-              }
-            }
-            newArgs.push(function nextCallback(err) {
-              if (err) {
-                reject(err);
-              } else {
-                resolve();
-              }
-            });
+            _handleNumCallbackParams(newArgs, options?.numCallbackParams);
+            numArgs = newArgs.length;
+            newArgs.push(nextCallback);
             continue;
           }
           firstError = error;
@@ -223,20 +209,10 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
           if (error instanceof Kareem.overwriteResult) {
             args = error.args;
             newArgs = args.slice();
-            numArgs = args.length;
-            if (options?.numCallbackParams != null) {
-              numArgs = options.numCallbackParams;
-              for (let i = newArgs.length; i < numArgs; ++i) {
-                newArgs.push(null);
-              }
-            }
-            newArgs.push(function nextCallback(err) {
-              if (err) {
-                reject(err);
-              } else {
-                resolve();
-              }
-            });
+            _handleNumCallbackParams(newArgs, options?.numCallbackParams);
+            numArgs = newArgs.length;
+            newArgs.push(nextCallback);
+            errorArgs = [firstError, ...newArgs];
             continue;
           }
           firstError = error;
@@ -247,20 +223,9 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
         if (res instanceof Kareem.overwriteResult) {
           args = res.args;
           newArgs = args.slice();
-          numArgs = args.length;
-          if (options?.numCallbackParams != null) {
-            numArgs = options.numCallbackParams;
-            for (let i = newArgs.length; i < numArgs; ++i) {
-              newArgs.push(null);
-            }
-          }
-          newArgs.push(function nextCallback(err) {
-            if (err) {
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
+          _handleNumCallbackParams(newArgs, options?.numCallbackParams);
+          numArgs = newArgs.length;
+          newArgs.push(nextCallback);
           continue;
         }
       }
@@ -273,6 +238,22 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
 
   return args;
 };
+
+/*!
+ * Handle the `numCallbackParams` option for `execPostSync`: fill `newArgs` with `null` until
+ * length is `numCallbackParams` if `numCallbackParams` is a number.
+ *
+ * @param {Array} newArgs The arguments to fill
+ * @param {number|null|undefined} numCallbackParams The number of callback parameters
+ */
+
+function _handleNumCallbackParams(newArgs, numCallbackParams) {
+  if (typeof numCallbackParams === 'number' && numCallbackParams > newArgs.length) {
+    for (let i = newArgs.length; i < numCallbackParams; ++i) {
+      newArgs.push(null);
+    }
+  }
+}
 
 /**
  * Execute all "post" hooks for "name" synchronously
