@@ -55,17 +55,8 @@ Kareem.prototype.execPre = async function execPre(name, context, args, options) 
   }
 
   for (const pre of pres) {
-    const args = [];
-    const _args = [null].concat($args);
-    for (let i = 1; i < _args.length; ++i) {
-      if (i === _args.length - 1 && typeof _args[i] === 'function') {
-        continue; // skip callbacks to avoid accidentally calling the callback from a hook
-      }
-      args.push(_args[i]);
-    }
-
     try {
-      const maybePromiseLike = pre.fn.apply(context, args);
+      const maybePromiseLike = pre.fn.apply(context, $args);
       if (isPromiseLike(maybePromiseLike)) {
         const result = await maybePromiseLike;
         if (result instanceof Kareem.overwriteArguments) {
@@ -150,43 +141,35 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
     return args;
   }
 
+  let cbPromise = null;
+  let resolve;
+  let reject;
+  const nextCallback = function nextCallback(err) {
+    if (err) {
+      reject(err);
+    } else {
+      resolve();
+    }
+  };
+
+  let newArgs = args.slice();
+  _handleNumCallbackParams(newArgs, options?.numCallbackParams);
+  let numArgs = newArgs.length;
+  newArgs.push(nextCallback);
+  let errorArgs = options?.error ? [firstError, ...newArgs] : null;
+
   for (const currentPost of posts) {
     const post = currentPost.fn;
-    let numArgs = 0;
-    const newArgs = [];
-    const argLength = args.length;
-    for (let i = 0; i < argLength; ++i) {
-      if (!args[i] || !args[i]._kareemIgnore) {
-        numArgs += 1;
-        newArgs.push(args[i]);
-      }
-    }
-    // If numCallbackParams set, fill in the rest with null to enforce consistent number of args
-    if (options?.numCallbackParams != null) {
-      numArgs = options.numCallbackParams;
-      for (let i = newArgs.length; i < numArgs; ++i) {
-        newArgs.push(null);
-      }
-    }
 
-    let resolve;
-    let reject;
-    const cbPromise = new Promise((_resolve, _reject) => {
+    cbPromise = new Promise((_resolve, _reject) => {
       resolve = _resolve;
       reject = _reject;
-    });
-    newArgs.push(function nextCallback(err) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
     });
 
     if (firstError) {
       if (isErrorHandlingMiddleware(currentPost, numArgs)) {
         try {
-          const res = post.apply(context, [firstError].concat(newArgs));
+          const res = post.apply(context, errorArgs);
           if (isPromiseLike(res)) {
             await res;
           } else if (post.length === numArgs + 2) {
@@ -196,9 +179,14 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
         } catch (error) {
           if (error instanceof Kareem.overwriteResult) {
             args = error.args;
+            newArgs = args.slice();
+            _handleNumCallbackParams(newArgs, options?.numCallbackParams);
+            numArgs = newArgs.length;
+            newArgs.push(nextCallback);
             continue;
           }
           firstError = error;
+          errorArgs = [firstError, ...newArgs];
         }
       } else {
         continue;
@@ -220,14 +208,24 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
         } catch (error) {
           if (error instanceof Kareem.overwriteResult) {
             args = error.args;
+            newArgs = args.slice();
+            _handleNumCallbackParams(newArgs, options?.numCallbackParams);
+            numArgs = newArgs.length;
+            newArgs.push(nextCallback);
+            errorArgs = [firstError, ...newArgs];
             continue;
           }
           firstError = error;
+          errorArgs = [firstError, ...newArgs];
           continue;
         }
 
         if (res instanceof Kareem.overwriteResult) {
           args = res.args;
+          newArgs = args.slice();
+          _handleNumCallbackParams(newArgs, options?.numCallbackParams);
+          numArgs = newArgs.length;
+          newArgs.push(nextCallback);
           continue;
         }
       }
@@ -240,6 +238,22 @@ Kareem.prototype.execPost = async function execPost(name, context, args, options
 
   return args;
 };
+
+/*!
+ * Handle the `numCallbackParams` option for `execPostSync`: fill `newArgs` with `null` until
+ * length is `numCallbackParams` if `numCallbackParams` is a number.
+ *
+ * @param {Array} newArgs The arguments to fill
+ * @param {number|null|undefined} numCallbackParams The number of callback parameters
+ */
+
+function _handleNumCallbackParams(newArgs, numCallbackParams) {
+  if (typeof numCallbackParams === 'number' && numCallbackParams > newArgs.length) {
+    for (let i = newArgs.length; i < numCallbackParams; ++i) {
+      newArgs.push(null);
+    }
+  }
+}
 
 /**
  * Execute all "post" hooks for "name" synchronously
