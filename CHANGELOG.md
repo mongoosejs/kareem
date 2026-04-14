@@ -1,5 +1,10 @@
 # Changelog
 
+<a name="3.3.0"></a>
+## 3.3.0 (2026-04-14)
+
+* perf: avoid cloning args on every pre/post #45
+
 <a name="3.2.0"></a>
 ## 3.2.0 (2026-01-29)
 
