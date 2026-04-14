@@ -16,8 +16,8 @@ async function run() {
     ['5 hooks, 1 arg', 5, ['x']],
     ['10 hooks, 1 arg', 10, ['x']],
     ['5 hooks, 3 args', 5, ['x', 42, true]],
-    ['5 hooks, 3 args + callback', 5, ['x', 42, noop]],
-    ['10 hooks, 3 args + callback', 10, ['x', 42, noop]]
+    ['5 hooks, 2 args + callback', 5, ['x', 42, noop]],
+    ['10 hooks, 2 args + callback', 10, ['x', 42, noop]]
   ];
 
   const results = [];
