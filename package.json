@@ -3,6 +3,7 @@
   "version": "3.3.0",
   "description": "Next-generation take on pre/post function hooks",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "lint": "eslint .",
     "test": "mocha ./test/*",
