@@ -350,6 +350,37 @@ assert.equal(obj.tofu, 'no');
 assert.equal(result, obj);
 ```
 
+### It supports filtering hooks per call with getOptions
+
+You can pass a `getOptions` function to `createWrapper()` to choose which
+hooks run on each call. `getOptions` receives the arguments the wrapped
+function was called with and returns options for `execPre()`/`execPost()`.
+Return a single `{ filter }` to apply to both pre and post hooks, or
+`{ pre, post }` to filter them separately. `createWrapperSync()` supports
+the same option. This is how Mongoose skips user-defined middleware for a
+single operation.
+
+```javascript
+const execed = [];
+
+const audit = function() { execed.push('audit'); };
+audit.skipMe = true;
+hooks.pre('cook', audit);
+
+hooks.pre('cook', function() { execed.push('validate'); });
+
+const cook = hooks.createWrapper('cook', o => o, null, {
+  getOptions: (args) => {
+    const options = args[args.length - 1] || {};
+    return options.skipMiddleware ? { filter: hook => !hook.fn.skipMe } : {};
+  }
+});
+
+// Skips the `audit` hook because the call passes `skipMiddleware: true`
+await cook({}, { skipMiddleware: true });
+assert.deepStrictEqual(execed, ['validate']);
+```
+
 ## clone()
 
 ### It clones a Kareem object
