@@ -401,7 +401,7 @@ Kareem.prototype.hasHooks = function(name) {
  * Create a Wrapper for "fn" on "name" and return the wrapped function
  * @param {String} name The name of the hook
  * @param {Function} fn The function to wrap
- * @param {*} context Overwrite the "this" for the hook
+ * @param {*} context Overwrite the "this" for the hook. If null/undefined, uses the calling context.
  * @param {Object} [options]
  * @param {Function} [options.getOptions] Function that receives the wrapper arguments and returns options for execPre/execPost. Can return `{ filter }` for both, or `{ pre: { filter }, post: { filter } }` for separate options.
  * @returns {Function} The wrapped function
@@ -413,7 +413,7 @@ Kareem.prototype.createWrapper = function(name, fn, context, options) {
     return fn;
   }
   return function kareemWrappedFunction() {
-    const _context = context || this;
+    const _context = context ?? this;
     return _this.wrap(name, fn, _context, Array.from(arguments), options);
   };
 };

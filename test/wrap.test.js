@@ -770,4 +770,62 @@ describe('wrap()', function() {
     assert.strictEqual(fnContext, callingContext);
     assert.strictEqual(postContext, callingContext);
   });
+
+  it('sync wrappers preserve explicit falsey contexts', function() {
+    for (const providedContext of [0, '', false]) {
+      const callingContext = { name: 'calling' };
+      let preContext = null;
+      let fnContext = null;
+      let postContext = null;
+
+      hooks = new Kareem();
+      hooks.pre('init', function() {
+        preContext = this;
+      });
+
+      hooks.post('init', function() {
+        postContext = this;
+      });
+
+      const wrapper = hooks.createWrapperSync('init', function() {
+        fnContext = this;
+        return 'result';
+      }, providedContext);
+
+      wrapper.call(callingContext);
+
+      assert.strictEqual(preContext, providedContext);
+      assert.strictEqual(fnContext, providedContext);
+      assert.strictEqual(postContext, providedContext);
+    }
+  });
+
+  it('async wrappers preserve explicit falsey contexts', async function() {
+    for (const providedContext of [0, '', false]) {
+      const callingContext = { name: 'calling' };
+      let preContext = null;
+      let fnContext = null;
+      let postContext = null;
+
+      hooks = new Kareem();
+      hooks.pre('save', function() {
+        preContext = this;
+      });
+
+      hooks.post('save', function() {
+        postContext = this;
+      });
+
+      const wrapper = hooks.createWrapper('save', function() {
+        fnContext = this;
+        return 'result';
+      }, providedContext);
+
+      await wrapper.call(callingContext);
+
+      assert.strictEqual(preContext, providedContext);
+      assert.strictEqual(fnContext, providedContext);
+      assert.strictEqual(postContext, providedContext);
+    }
+  });
 });
