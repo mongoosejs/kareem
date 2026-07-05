@@ -300,6 +300,30 @@ assert.equal(obj.tofu, 'no');
 assert.equal(result, obj);
 ```
 
+### It supports filtering hooks per call with getOptions
+
+Direct `wrap()` callers can pass the same `getOptions` option that
+`createWrapper()` accepts. `getOptions` receives the call arguments and
+returns options for `execPre()`/`execPost()`, either a single `{ filter }`
+applied to both phases or separate `{ pre, post }` options.
+
+```javascript
+const execed = [];
+
+const audit = function() { execed.push('audit'); };
+audit.skipMe = true;
+hooks.pre('cook', audit);
+
+hooks.pre('cook', function() { execed.push('validate'); });
+
+const result = await hooks.wrap('cook', o => o, null, ['eggs'], {
+  getOptions: (args) => args[0] === 'eggs' ? { filter: hook => !hook.fn.skipMe } : {}
+});
+
+assert.deepStrictEqual(execed, ['validate']);
+assert.equal(result, 'eggs');
+```
+
 ## createWrapper()
 
 ### It wraps wrap() into a callable function

@@ -42,8 +42,8 @@ declare module "kareem" {
     clone(): Kareem;
     merge(other: Kareem, clone?: boolean): this;
 
-    createWrapper(name: string, fn: Function, context?: any, options?: CreateWrapperOptions): Function;
-    createWrapperSync(name: string, fn: Function, context?: any, options?: CreateWrapperSyncOptions): Function;
+    createWrapper<T extends (...args: any[]) => any>(name: string, fn: T, context?: any, options?: CreateWrapperOptions): (...args: Parameters<T>) => Promise<Awaited<ReturnType<T>>>;
+    createWrapperSync<T extends (...args: any[]) => any>(name: string, fn: T, context?: any, options?: CreateWrapperSyncOptions): (...args: Parameters<T>) => ReturnType<T>;
     hasHooks(name: string): boolean;
     filter(fn: (hook: any) => boolean): Kareem;
 

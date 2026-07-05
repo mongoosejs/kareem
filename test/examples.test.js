@@ -285,6 +285,23 @@ describe('wrap()', function() {
     assert.equal(obj.tofu, 'no');
     assert.equal(result, obj);
   });
+
+  it('supports filtering hooks per call with getOptions', async function() {
+    const execed = [];
+
+    const audit = function() { execed.push('audit'); };
+    audit.skipMe = true;
+    hooks.pre('cook', audit);
+
+    hooks.pre('cook', function() { execed.push('validate'); });
+
+    const result = await hooks.wrap('cook', o => o, null, ['eggs'], {
+      getOptions: (args) => args[0] === 'eggs' ? { filter: hook => !hook.fn.skipMe } : {}
+    });
+
+    assert.deepStrictEqual(execed, ['validate']);
+    assert.equal(result, 'eggs');
+  });
 });
 
 //
