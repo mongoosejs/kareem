@@ -1,5 +1,10 @@
 # Changelog
 
+<a name="3.4.0"></a>
+## 3.4.0 (2026-08-19)
+
+* feat: filter hooks per call in createWrapper via getOptions #46 #44 #43
+
 <a name="3.3.0"></a>
 ## 3.3.0 (2026-04-14)
 
