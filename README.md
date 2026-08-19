@@ -300,6 +300,30 @@ assert.equal(obj.tofu, 'no');
 assert.equal(result, obj);
 ```
 
+### It supports filtering hooks per call with getOptions
+
+Direct `wrap()` callers can pass the same `getOptions` option that
+`createWrapper()` accepts. `getOptions` receives the call arguments and
+returns options for `execPre()`/`execPost()`, either a single `{ filter }`
+applied to both phases or separate `{ pre, post }` options.
+
+```javascript
+const execed = [];
+
+const audit = function() { execed.push('audit'); };
+audit.skipMe = true;
+hooks.pre('cook', audit);
+
+hooks.pre('cook', function() { execed.push('validate'); });
+
+const result = await hooks.wrap('cook', o => o, null, ['eggs'], {
+  getOptions: (args) => args[0] === 'eggs' ? { filter: hook => !hook.fn.skipMe } : {}
+});
+
+assert.deepStrictEqual(execed, ['validate']);
+assert.equal(result, 'eggs');
+```
+
 ## createWrapper()
 
 ### It wraps wrap() into a callable function
@@ -348,6 +372,37 @@ assert.equal(obj.waffles, false);
 assert.equal(obj.tofu, 'no');
 
 assert.equal(result, obj);
+```
+
+### It supports filtering hooks per call with getOptions
+
+You can pass a `getOptions` function to `createWrapper()` to choose which
+hooks run on each call. `getOptions` receives the arguments the wrapped
+function was called with and returns options for `execPre()`/`execPost()`.
+Return a single `{ filter }` to apply to both pre and post hooks, or
+`{ pre, post }` to filter them separately. `createWrapperSync()` supports
+the same option. This is how Mongoose skips user-defined middleware for a
+single operation.
+
+```javascript
+const execed = [];
+
+const audit = function() { execed.push('audit'); };
+audit.skipMe = true;
+hooks.pre('cook', audit);
+
+hooks.pre('cook', function() { execed.push('validate'); });
+
+const cook = hooks.createWrapper('cook', o => o, null, {
+  getOptions: (args) => {
+    const options = args[args.length - 1] || {};
+    return options.skipMiddleware ? { filter: hook => !hook.fn.skipMe } : {};
+  }
+});
+
+// Skips the `audit` hook because the call passes `skipMiddleware: true`
+await cook({}, { skipMiddleware: true });
+assert.deepStrictEqual(execed, ['validate']);
 ```
 
 ## clone()

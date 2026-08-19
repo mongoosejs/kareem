@@ -612,6 +612,112 @@ describe('wrap()', function() {
     assert.deepStrictEqual(execed, ['pre1', 'pre2', 'fn', 'post2']);
   });
 
+  it('async wrappers support getOptions to filter hooks', async function() {
+    const execed = [];
+
+    const fn1 = function() { execed.push('pre1'); };
+    fn1.skipMe = true;
+    hooks.pre('cook', fn1);
+
+    const fn2 = function() { execed.push('pre2'); };
+    hooks.pre('cook', fn2);
+
+    const postFn1 = function() { execed.push('post1'); };
+    postFn1.skipMe = true;
+    hooks.post('cook', postFn1);
+
+    const postFn2 = function() { execed.push('post2'); };
+    hooks.post('cook', postFn2);
+
+    const wrapper = hooks.createWrapper('cook', function(doc) {
+      execed.push('fn');
+      return doc;
+    }, null, {
+      getOptions: (args) => {
+        const opts = args[1] || {};
+        if (opts.skipMiddleware) {
+          return { filter: hook => !hook.fn.skipMe };
+        }
+        return {};
+      }
+    });
+
+    // Without skipMiddleware option, all hooks run
+    await wrapper({ name: 'test' }, {});
+    assert.deepStrictEqual(execed, ['pre1', 'pre2', 'fn', 'post1', 'post2']);
+
+    // With skipMiddleware option, filtered hooks are skipped
+    execed.length = 0;
+    await wrapper({ name: 'test' }, { skipMiddleware: true });
+    assert.deepStrictEqual(execed, ['pre2', 'fn', 'post2']);
+  });
+
+  it('async wrappers support separate pre/post options from getOptions', async function() {
+    const execed = [];
+
+    const fn1 = function() { execed.push('pre1'); };
+    fn1.skipMe = true;
+    hooks.pre('cook', fn1);
+
+    const fn2 = function() { execed.push('pre2'); };
+    hooks.pre('cook', fn2);
+
+    const postFn1 = function() { execed.push('post1'); };
+    postFn1.skipMe = true;
+    hooks.post('cook', postFn1);
+
+    const postFn2 = function() { execed.push('post2'); };
+    hooks.post('cook', postFn2);
+
+    const wrapper = hooks.createWrapper('cook', function(doc) {
+      execed.push('fn');
+      return doc;
+    }, null, {
+      getOptions: (args) => {
+        const opts = args[1] || {};
+        return {
+          pre: opts.skipPre ? { filter: hook => !hook.fn.skipMe } : {},
+          post: opts.skipPost ? { filter: hook => !hook.fn.skipMe } : {}
+        };
+      }
+    });
+
+    // Skip only pre hooks
+    await wrapper({ name: 'test' }, { skipPre: true });
+    assert.deepStrictEqual(execed, ['pre2', 'fn', 'post1', 'post2']);
+
+    // Skip only post hooks
+    execed.length = 0;
+    await wrapper({ name: 'test' }, { skipPost: true });
+    assert.deepStrictEqual(execed, ['pre1', 'pre2', 'fn', 'post2']);
+  });
+
+  it('async wrappers apply the getOptions filter to error handlers', async function() {
+    const execed = [];
+
+    hooks.pre('cook', function() {
+      throw new Error('fail');
+    });
+
+    const errFn1 = function() { execed.push('errorHandler1'); };
+    errFn1.skipMe = true;
+    hooks.postError('cook', errFn1);
+
+    const errFn2 = function() { execed.push('errorHandler2'); };
+    hooks.postError('cook', errFn2);
+
+    const wrapper = hooks.createWrapper('cook', function() {
+      execed.push('fn');
+    }, null, {
+      getOptions: () => ({ filter: hook => !hook.fn.skipMe })
+    });
+
+    await assert.rejects(() => wrapper(), /fail/);
+
+    // errFn1 is filtered out, errFn2 still runs, and the wrapped fn never runs
+    assert.deepStrictEqual(execed, ['errorHandler2']);
+  });
+
   it('sync wrappers use provided context over calling context', function() {
     const providedContext = { name: 'provided' };
     const callingContext = { name: 'calling' };
@@ -663,5 +769,63 @@ describe('wrap()', function() {
     assert.strictEqual(preContext, callingContext);
     assert.strictEqual(fnContext, callingContext);
     assert.strictEqual(postContext, callingContext);
+  });
+
+  it('sync wrappers preserve explicit falsey contexts', function() {
+    for (const providedContext of [0, '', false]) {
+      const callingContext = { name: 'calling' };
+      let preContext = null;
+      let fnContext = null;
+      let postContext = null;
+
+      hooks = new Kareem();
+      hooks.pre('init', function() {
+        preContext = this;
+      });
+
+      hooks.post('init', function() {
+        postContext = this;
+      });
+
+      const wrapper = hooks.createWrapperSync('init', function() {
+        fnContext = this;
+        return 'result';
+      }, providedContext);
+
+      wrapper.call(callingContext);
+
+      assert.strictEqual(preContext, providedContext);
+      assert.strictEqual(fnContext, providedContext);
+      assert.strictEqual(postContext, providedContext);
+    }
+  });
+
+  it('async wrappers preserve explicit falsey contexts', async function() {
+    for (const providedContext of [0, '', false]) {
+      const callingContext = { name: 'calling' };
+      let preContext = null;
+      let fnContext = null;
+      let postContext = null;
+
+      hooks = new Kareem();
+      hooks.pre('save', function() {
+        preContext = this;
+      });
+
+      hooks.post('save', function() {
+        postContext = this;
+      });
+
+      const wrapper = hooks.createWrapper('save', function() {
+        fnContext = this;
+        return 'result';
+      }, providedContext);
+
+      await wrapper.call(callingContext);
+
+      assert.strictEqual(preContext, providedContext);
+      assert.strictEqual(fnContext, providedContext);
+      assert.strictEqual(postContext, providedContext);
+    }
   });
 });
