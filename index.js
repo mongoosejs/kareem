@@ -293,9 +293,8 @@ Kareem.prototype.execPostSync = function(name, context, args, options) {
 Kareem.prototype.createWrapperSync = function(name, fn, context, options) {
   const _this = this;
   const getOptions = options?.getOptions;
-  return function syncWrapper() {
+  return function syncWrapper(...args) {
     const _context = context ?? this;
-    const args = Array.from(arguments);
     const execOptions = typeof getOptions === 'function' ? getOptions(args) : {};
     const preOptions = execOptions.pre ?? execOptions;
     const postOptions = execOptions.post ?? execOptions;
@@ -412,9 +411,9 @@ Kareem.prototype.createWrapper = function(name, fn, context, options) {
     // Fast path: if there's no hooks for this function, just return the function
     return fn;
   }
-  return function kareemWrappedFunction() {
+  return function kareemWrappedFunction(...args) {
     const _context = context ?? this;
-    return _this.wrap(name, fn, _context, Array.from(arguments), options);
+    return _this.wrap(name, fn, _context, args, options);
   };
 };
 
