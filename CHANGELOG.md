@@ -1,5 +1,10 @@
 # Changelog
 
+<a name="3.4.1"></a>
+## 3.4.1 (2026-10-12)
+
+* perf: avoid copying arguments on every call #47
+
 <a name="3.4.0"></a>
 ## 3.4.0 (2026-08-19)
 
